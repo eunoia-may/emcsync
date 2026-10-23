@@ -22,8 +22,39 @@
           }));
     in
     {
-      # 暂不提供 packages：尚无 Cargo.toml / Cargo.lock，buildRustPackage 会失败。
-      # cargo 落地后再补 packages.default，用 cargoLock.lockFile = ./Cargo.lock。
+      packages = forEachSystem (pkgs:
+        let
+          rust = pkgs.rust-bin.stable.latest.default;
+          rustPlatform = pkgs.makeRustPlatform {
+            cargo = rust;
+            rustc = rust;
+          };
+        in
+        {
+          default = rustPlatform.buildRustPackage {
+            pname = "emcsync-cli";
+            version = (pkgs.lib.importTOML ./Cargo.toml).package.version;
+
+            # 只收编译需要的文件；target、本地 cargo 缓存和测试实例都不进 store。
+            src = pkgs.lib.fileset.toSource {
+              root = ./.;
+              fileset = pkgs.lib.fileset.unions [
+                ./Cargo.toml
+                ./Cargo.lock
+                ./src
+                ./locales
+              ];
+            };
+
+            cargoLock.lockFile = ./Cargo.lock;
+
+            meta = {
+              description = "复现 Minecraft 实例的内容资源";
+              mainProgram = "emcsync-cli";
+            };
+          };
+        });
+
       devShells = forEachSystem (pkgs:
         let
           rust = pkgs.rust-bin.stable.latest.default.override {

@@ -57,11 +57,13 @@
 
 - [x] 真实实例整跑与体验修正 — 产出：`src/modrinth.rs`、`src/install.rs`、`src/ui.rs`、`locales/*.yml`
 
+- [x] flake 补 packages.default — 产出：`flake.nix`、`工程-依赖与库的说明.md`
+
 ## 现在做了什么，下一步该做什么
 每个阶段完成或中止后，用最短的话写：做了什么、下一步做什么、该读哪个文件。最新在上，完成的划掉。
 
-- 刚完成：真实实例整跑。源 26.2（34 模组 + 1 资源包）同步到空的 1.21.1 实例：32 项装好（含 210MB 的 Flashback），2 项此版本不存在，1 项无法匹配；重跑走“已存在”分支。修掉三处：大文件被 30 秒总超时掐断、安装失败只显示“安装 X 失败”、进度条没有总数。`build` / `clippy` / `fmt` / `test`（16 项）通过。
+- 刚完成：flake 补 packages.default。`nix build` 产出 `emcsync-cli-0.1.0`，构建时跑通 16 项单测；源码只收 `Cargo.toml`、`Cargo.lock`、`src/`、`locales/`，`target/` 与 `.cache/` 不进 store。`nix run . -- --version`、`nix flake check --no-build` 通过。
 
-- 下一步：决定是否接 CurseForge（需要 key，不写进仓库），以及 flake 是否补 `packages.default`。读 `执行流-sync-资源匹配.md` 与 `工程-依赖与库的说明.md`。
+- 下一步：CurseForge 暂不接，本轮作为 0.1 收尾（需要时再从 MurmurHash2 与 `x-api-key` 开始）。读 `执行流-sync-资源匹配.md` 与 `工程-依赖与库的说明.md`。
 
 - 已划掉：~~写初始提示~~、~~把环境搭建说明独立成文~~、~~优化提示~~、~~cargo 初始化与依赖落地~~、~~CLI 收尾~~、~~sync 扫描与资源匹配~~、~~查兼容版本与安装~~、~~真实实例整跑~~。
