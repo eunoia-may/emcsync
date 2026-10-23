@@ -1,11 +1,13 @@
 //! 命令行入口：初始化语言、拦截 help、解析参数并分发。
 
 mod cli;
+mod report;
 mod ui;
 
 use std::process::ExitCode;
 
 use anyhow::Result;
+use emcsync_cli::{matching, modrinth, scan};
 use rust_i18n::t;
 
 rust_i18n::i18n!("locales", fallback = "en");
@@ -41,9 +43,54 @@ fn pick_locale(raw: Option<&str>) -> &'static str {
 }
 
 async fn sync(args: cli::SyncArgs) -> Result<()> {
-    // 骨架阶段先打印解析结果，确认参数都到位；实现同步流程后替换。
-    eprintln!("{args:#?}");
-    anyhow::bail!("{}", t!("sync.not_implemented"));
+    if !args.source_dir.is_dir() {
+        anyhow::bail!(
+            "{}",
+            t!(
+                "sync.source_missing",
+                path = args.source_dir.display().to_string()
+            )
+        );
+    }
+
+    if !args.target_dir.is_dir() {
+        anyhow::bail!(
+            "{}",
+            t!(
+                "sync.target_missing",
+                path = args.target_dir.display().to_string()
+            )
+        );
+    }
+
+    if matches!(args.prefer, cli::Platform::CurseForge) {
+        ui::warn(&t!("sync.curseforge_deferred"));
+    }
+
+    ui::status(&t!("sync.matching"));
+    let source = scan::scan_instance(&args.source_dir)?;
+    let target = scan::scan_instance(&args.target_dir)?;
+
+    if source.is_empty() {
+        ui::warn(&t!("sync.empty_source"));
+        return Ok(());
+    }
+
+    let client = modrinth::Client::new()?;
+    let result = matching::match_resources(&client, &source, &target).await?;
+    report::print_match(&result);
+
+    if args.dry_run {
+        return Ok(());
+    }
+
+    // 版本兼容查询与安装尚未落地；目标已齐全时不必再等下一步。
+    if result.missing.is_empty() {
+        ui::print_stdout(&format!("{}\n", t!("sync.done")));
+        return Ok(());
+    }
+
+    anyhow::bail!("{}", t!("sync.install_not_implemented"));
 }
 
 #[cfg(test)]

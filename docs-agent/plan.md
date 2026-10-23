@@ -51,11 +51,13 @@
 
 - [x] CLI 收尾：关自动 help、按 locale 手写 help、补 i18n 文案、tty 判断 — 产出：`src/cli/`、`src/ui.rs`、`locales/*.yml`
 
+- [x] sync 扫描与资源匹配 — 产出：`src/hash.rs`、`src/scan.rs`、`src/modrinth.rs`、`src/matching.rs`、`src/platform.rs`
+
 ## 现在做了什么，下一步该做什么
 每个阶段完成或中止后，用最短的话写：做了什么、下一步做什么、该读哪个文件。最新在上，完成的划掉。
 
-- 刚完成：CLI 收尾。clap 自动 help 关掉，`help` / `-h` / `--help` 解析前统一拦截，按 locale 输出手写文案；常见 clap 错误本地化并附建议；颜色走 anstream 自动降级；tty 判断留给安装确认。`build` / `clippy` / `fmt` / `test` 通过。
+- 刚完成：sync 的扫描与资源匹配。扫描 `mods` / `resourcepacks` / `shaderpacks`，算 SHA-1，带 User-Agent 调 Modrinth 反查版本与项目，按 `project_id` 做差集，输出待安装 / 已存在 / 无法匹配；`--dry-run` 看结果，实际安装前报未实现。`build` / `clippy` / `fmt` / `test` 通过。
 
-- 下一步：sync 的扫描与资源匹配（先把源/目标扫描、SHA-1、Modrinth 反查与差集跑通），读 `执行流-sync-资源匹配.md`、`规范-命令设计与简单演示.md`。
+- 下一步：查兼容版本与安装（release 过滤、按类型落目录、确认与目录创建），读 `执行流-sync-资源匹配.md` 的“查兼容版本”“输出分类”“安装”三节。
 
-- 已划掉：~~写初始提示~~、~~把环境搭建说明独立成文~~、~~优化提示~~、~~cargo 初始化与依赖落地~~、~~CLI 收尾~~。
+- 已划掉：~~写初始提示~~、~~把环境搭建说明独立成文~~、~~优化提示~~、~~cargo 初始化与依赖落地~~、~~CLI 收尾~~、~~sync 扫描与资源匹配~~。

@@ -28,6 +28,16 @@ pub fn is_interactive() -> bool {
     io::stdin().is_terminal()
 }
 
+/// 进行中的步骤，走在 stderr，不污染管道里的结果。
+pub fn status(text: &str) {
+    print_stderr(&format!("{}\n", text.dimmed()));
+}
+
+/// 提醒，不中断流程。
+pub fn warn(text: &str) {
+    print_stderr(&format!("{}{text}\n", warning_label(&t!("warning.prefix"))));
+}
+
 /// 命令、选项、建议值这类需要一眼看到的名字。
 pub fn accent(text: &str) -> String {
     text.bright_cyan().to_string()
@@ -41,4 +51,9 @@ pub fn heading(text: &str) -> String {
 /// 错误前缀。
 pub fn error_label(text: &str) -> String {
     text.red().bold().to_string()
+}
+
+/// 警告前缀。
+fn warning_label(text: &str) -> String {
+    text.yellow().bold().to_string()
 }
