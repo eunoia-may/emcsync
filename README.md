@@ -37,7 +37,7 @@ Windows 解压到任意目录即是安装，删掉目录即是卸载；配置与
 inputs.emcsync-cli.url = "github:Eunoia-May/emcsync-cli";
 ```
 
-在模块列表里引用本项目模块，项目只把包挂进 `pkgs`，装不装由你决定：
+在模块列表里引用本项目模块，项目只把包挂进 `pkgs`，需主动声明包来安装：
 
 ```nix
 # NixOS：flake.nix 里 nixosConfigurations.<主机>.modules 中加一行

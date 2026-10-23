@@ -37,7 +37,7 @@ Add the input in your `flake.nix`:
 inputs.emcsync-cli.url = "github:Eunoia-May/emcsync-cli";
 ```
 
-Reference the module in your module list. The project only puts the package into `pkgs`; whether to install it is up to you:
+Reference the module in your module list. The project only puts the package into `pkgs`; you need to declare the package to install it:
 
 ```nix
 # NixOS: one line in nixosConfigurations.<host>.modules
