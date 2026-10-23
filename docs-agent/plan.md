@@ -53,11 +53,13 @@
 
 - [x] sync 扫描与资源匹配 — 产出：`src/hash.rs`、`src/scan.rs`、`src/modrinth.rs`、`src/matching.rs`、`src/platform.rs`
 
+- [x] 查兼容版本与安装 — 产出：`src/plan.rs`、`src/install.rs`、`src/report.rs`、`src/modrinth.rs`、`src/main.rs`、`locales/*.yml`
+
 ## 现在做了什么，下一步该做什么
 每个阶段完成或中止后，用最短的话写：做了什么、下一步做什么、该读哪个文件。最新在上，完成的划掉。
 
-- 刚完成：sync 的扫描与资源匹配。扫描 `mods` / `resourcepacks` / `shaderpacks`，算 SHA-1，带 User-Agent 调 Modrinth 反查版本与项目，按 `project_id` 做差集，输出待安装 / 已存在 / 无法匹配；`--dry-run` 看结果，实际安装前报未实现。`build` / `clippy` / `fmt` / `test` 通过。
+- 刚完成：查兼容版本与安装。差集里的项目按 8 并发查最新 release（只有模组带加载器过滤），分「待安装 / 此版本不存在 / 已存在 / 无法匹配」四类；确认后按类型落目录、流式下载（`.part` 后改名，进度条非 tty 自动隐藏）。用真实 sodium 与 Fresh 资源包跑通 dry-run、安装、重跑、中英文输出。`build` / `clippy` / `fmt` / `test` 通过。
 
-- 下一步：查兼容版本与安装（release 过滤、按类型落目录、确认与目录创建），读 `执行流-sync-资源匹配.md` 的“查兼容版本”“输出分类”“安装”三节。
+- 下一步：拿真实实例整跑一遍，看输出与下载体验要不要调；之后决定是否接 CurseForge、flake 是否补 `packages.default`。读 `执行流-sync-资源匹配.md` 与 `工程-依赖与库的说明.md`。
 
-- 已划掉：~~写初始提示~~、~~把环境搭建说明独立成文~~、~~优化提示~~、~~cargo 初始化与依赖落地~~、~~CLI 收尾~~、~~sync 扫描与资源匹配~~。
+- 已划掉：~~写初始提示~~、~~把环境搭建说明独立成文~~、~~优化提示~~、~~cargo 初始化与依赖落地~~、~~CLI 收尾~~、~~sync 扫描与资源匹配~~、~~查兼容版本与安装~~。

@@ -1,6 +1,6 @@
 //! Modrinth API 的最小客户端。
 //!
-//! 只用两件事：按 SHA-1 反查版本，按项目 ID 批量拿 slug。CurseForge 接入前，这里就是全部网络逻辑。
+//! 只用三件事：按 SHA-1 反查版本、按项目查最新 release、流式下载。
 //! 文档：<https://docs.modrinth.com/api/>
 
 use std::collections::{BTreeSet, HashMap};
@@ -21,7 +21,21 @@ pub struct Version {
     pub project_id: String,
     pub version_number: String,
     pub version_type: String,
+    /// RFC 3339 时间戳，同一格式下可以直接按字符串比大小。
+    pub date_published: String,
+    pub game_versions: Vec<String>,
+    pub loaders: Vec<String>,
     pub files: Vec<VersionFile>,
+}
+
+impl Version {
+    /// 主文件优先，没有主文件就退回第一个。
+    pub fn primary_file(&self) -> Option<&VersionFile> {
+        self.files
+            .iter()
+            .find(|file| file.primary)
+            .or_else(|| self.files.first())
+    }
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -48,10 +62,17 @@ pub enum ApiError {
     #[error("Modrinth returned HTTP {status}: {body}")]
     BadStatus { status: u16, body: String },
 
+    #[error("download failed with HTTP {status}: {url}")]
+    Download { url: String, status: u16 },
+
     #[error("failed to decode Modrinth response: {0}")]
     Decode(#[from] serde_json::Error),
+
+    #[error("a version lookup task failed: {0}")]
+    Task(#[from] tokio::task::JoinError),
 }
 
+#[derive(Clone)]
 pub struct Client {
     http: reqwest::Client,
 }
@@ -121,6 +142,57 @@ impl Client {
 
         Ok(projects)
     }
+
+    /// 查某个项目在指定游戏版本（和加载器）下的最新稳定版。
+    ///
+    /// 资源包、光影包没有加载器概念，`loaders` 传 `None`，否则会查不到东西。
+    pub async fn latest_release(
+        &self,
+        project_id: &str,
+        game_version: &str,
+        loaders: Option<&[&str]>,
+    ) -> Result<Option<Version>, ApiError> {
+        let game_versions = serde_json::to_string(&[game_version])?;
+        let mut query = vec![("game_versions", game_versions)];
+
+        if let Some(loaders) = loaders {
+            query.push(("loaders", serde_json::to_string(loaders)?));
+        }
+
+        let response = self
+            .http
+            .get(format!("{API_BASE}/project/{project_id}/version"))
+            .query(&query[..])
+            .send()
+            .await?;
+        let text = read_body(response).await?;
+        let versions: Vec<Version> = serde_json::from_str(&text)?;
+
+        Ok(latest_release(versions))
+    }
+
+    /// 发起下载，响应体交给调用方按块读取，不缓存到内存。
+    pub async fn download(&self, url: &str) -> Result<reqwest::Response, ApiError> {
+        let response = self.http.get(url).send().await?;
+        let status = response.status();
+
+        if !status.is_success() {
+            return Err(ApiError::Download {
+                url: url.to_string(),
+                status: status.as_u16(),
+            });
+        }
+
+        Ok(response)
+    }
+}
+
+/// 只要 release，按发布时间取最新。
+fn latest_release(versions: Vec<Version>) -> Option<Version> {
+    versions
+        .into_iter()
+        .filter(|version| version.version_type == "release")
+        .max_by(|a, b| a.date_published.cmp(&b.date_published))
 }
 
 async fn read_body(response: reqwest::Response) -> Result<String, ApiError> {
@@ -136,4 +208,66 @@ async fn read_body(response: reqwest::Response) -> Result<String, ApiError> {
     }
 
     Ok(text)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+
+    use super::{Version, latest_release};
+
+    fn version(number: &str, version_type: &str, date: &str) -> Version {
+        Version {
+            id: number.to_string(),
+            project_id: "P1".to_string(),
+            version_number: number.to_string(),
+            version_type: version_type.to_string(),
+            date_published: date.to_string(),
+            game_versions: vec!["1.21.1".to_string()],
+            loaders: vec!["fabric".to_string()],
+            files: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn picks_newest_release() {
+        let versions = vec![
+            version("2.0.0", "beta", "2026-08-01T00:00:00Z"),
+            version("1.0.0", "release", "2026-01-01T00:00:00Z"),
+            version("1.1.0", "release", "2026-02-01T00:00:00Z"),
+        ];
+
+        assert_eq!(latest_release(versions).unwrap().version_number, "1.1.0");
+    }
+
+    #[test]
+    fn ignores_non_release() {
+        assert!(latest_release(vec![version("2.0.0", "beta", "2026-08-01T00:00:00Z")]).is_none());
+        assert!(latest_release(Vec::new()).is_none());
+    }
+
+    #[test]
+    fn primary_file_prefers_the_primary_flag() {
+        let mut version = version("1.0.0", "release", "2026-01-01T00:00:00Z");
+        version.files = vec![file("extra.jar", false), file("main.jar", true)];
+
+        assert_eq!(version.primary_file().unwrap().filename, "main.jar");
+    }
+
+    #[test]
+    fn primary_file_falls_back_to_the_first() {
+        let mut version = version("1.0.0", "release", "2026-01-01T00:00:00Z");
+        version.files = vec![file("only.jar", false)];
+
+        assert_eq!(version.primary_file().unwrap().filename, "only.jar");
+    }
+
+    fn file(name: &str, primary: bool) -> super::VersionFile {
+        super::VersionFile {
+            hashes: HashMap::new(),
+            url: format!("https://cdn.modrinth.com/{name}"),
+            filename: name.to_string(),
+            primary,
+        }
+    }
 }

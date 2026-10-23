@@ -1,27 +1,32 @@
-//! 匹配结果的终端展示。
+//! 匹配与安装计划的终端展示。
+//!
+//! 四类按“待安装、此版本不存在、已存在、无法匹配”的顺序输出，类内按名称排序。
 
 use emcsync_cli::matching::{MatchResult, Resolved};
+use emcsync_cli::plan::{InstallItem, Plan};
 use rust_i18n::t;
 
 use crate::ui;
 
-pub fn print_match(result: &MatchResult) {
+pub fn print_plan(result: &MatchResult, plan: &Plan) {
     let mut blocks = Vec::new();
 
-    if !result.missing.is_empty() {
-        blocks.push(matched_block(
+    if !plan.installable.is_empty() {
+        blocks.push(installable_block(
             &t!("sync.heading_missing"),
-            &result.missing,
-            true,
+            &plan.installable,
+        ));
+    }
+
+    if !plan.unavailable.is_empty() {
+        blocks.push(plain_block(
+            &t!("sync.heading_unavailable"),
+            &plan.unavailable,
         ));
     }
 
     if !result.existing.is_empty() {
-        blocks.push(matched_block(
-            &t!("sync.heading_existing"),
-            &result.existing,
-            false,
-        ));
+        blocks.push(plain_block(&t!("sync.heading_existing"), &result.existing));
     }
 
     if !result.unmatched.is_empty() {
@@ -31,26 +36,39 @@ pub fn print_match(result: &MatchResult) {
         ));
     }
 
-    if result.missing.is_empty() {
+    if plan.installable.is_empty() {
         blocks.push(format!("{}\n", t!("sync.nothing_missing")));
     }
 
     ui::print_stdout(&blocks.join("\n"));
 }
 
-fn matched_block(heading: &str, items: &[Resolved], with_platform: bool) -> String {
+/// 待安装的资源带平台，方便看出是从哪拿的。
+fn installable_block(heading: &str, items: &[InstallItem]) -> String {
     let mut text = format!("{}\n", ui::heading(heading));
 
     for item in items {
-        let slug = ui::accent(&item.project.slug);
-        let kind = item.file.kind.label();
+        text.push_str(&format!(
+            "  {} ({}) ({})\n",
+            ui::accent(&item.project.slug),
+            item.kind.label(),
+            item.platform.label()
+        ));
+    }
 
-        if with_platform {
-            let platform = item.platform.label();
-            text.push_str(&format!("  {slug} ({kind}) ({platform})\n"));
-        } else {
-            text.push_str(&format!("  {slug} ({kind})\n"));
-        }
+    text
+}
+
+/// 此版本不存在、已存在的资源不显示平台，省一次反查。
+fn plain_block(heading: &str, items: &[Resolved]) -> String {
+    let mut text = format!("{}\n", ui::heading(heading));
+
+    for item in items {
+        text.push_str(&format!(
+            "  {} ({})\n",
+            ui::accent(&item.project.slug),
+            item.file.kind.label()
+        ));
     }
 
     text

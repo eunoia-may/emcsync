@@ -6,7 +6,7 @@ description = "复现 Minecraft 实例的内容资源"
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
-tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "fs", "io-util"] }
 reqwest = { version = "0.13", default-features = false, features = ["rustls", "http2", "json", "charset", "query"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

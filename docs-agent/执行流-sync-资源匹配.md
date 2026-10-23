@@ -28,7 +28,12 @@
 
 ## 查兼容版本
 
-对差集中每个资源，拿 `--version` 和 `--loader` 去平台查最新稳定版。只保留 `version_type == "release"` 的结果。
+对差集中每个资源，拿 `--version` 去平台查最新稳定版。加载器只对模组生效：
+
+- `mod`：同时按 `game_versions` 和 `loaders` 过滤。
+- `resourcepack`、`shaderpack`：只按 `game_versions` 过滤。它们的版本里 `loaders` 是 `minecraft` 或 `iris`/`optifine`，带上 `--loader` 会全部查空。
+
+只保留 `version_type == "release"`，按 `date_published` 取最新。
 
 CurseForge 这边还要多看一眼：部分模组禁用了第三方下载，`downloadUrl` 会返回 `null`。这种情况直接归入“此版本不存在”，不要留到下载阶段才炸。
 
@@ -53,3 +58,5 @@ CurseForge 这边还要多看一眼：部分模组禁用了第三方下载，`do
 - `shaderpack` → `shaderpacks/`
 
 子目录缺失时随安装一并创建，不单独提问：缺了哪些写进确认提示，与安装确认合成一次询问。带 `-y` 直接创建，`--dry-run` 只提示不创建。目标实例目录本身不存在则直接报错退出。
+
+先写 `<filename>.part` 再改名，下载中断不会留下半个文件。非 tty 且没带 `-y` 时不能弹询问，直接报错提示加 `-y`。

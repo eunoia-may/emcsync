@@ -5,6 +5,8 @@
 use std::io::{self, IsTerminal};
 use std::process::ExitCode;
 
+use anyhow::Result;
+use inquire::InquireError;
 use owo_colors::OwoColorize;
 use rust_i18n::t;
 
@@ -22,10 +24,18 @@ pub fn fail(err: &anyhow::Error) -> ExitCode {
     ExitCode::FAILURE
 }
 
-/// 交互确认需要终端，非 tty 时不能弹询问。安装确认落地后使用。
-#[allow(dead_code)]
+/// 交互确认需要终端，非 tty 时不能弹询问。
 pub fn is_interactive() -> bool {
     io::stdin().is_terminal()
+}
+
+/// 默认选“是”的确认；ESC 或 Ctrl+C 视为取消，返回 `false`。
+pub fn confirm(prompt: &str) -> Result<bool> {
+    match inquire::Confirm::new(prompt).with_default(true).prompt() {
+        Ok(answer) => Ok(answer),
+        Err(InquireError::OperationCanceled | InquireError::OperationInterrupted) => Ok(false),
+        Err(err) => Err(err.into()),
+    }
 }
 
 /// 进行中的步骤，走在 stderr，不污染管道里的结果。

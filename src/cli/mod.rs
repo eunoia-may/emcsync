@@ -71,6 +71,18 @@ pub enum Loader {
     Quilt,
 }
 
+impl Loader {
+    /// Modrinth 与 CurseForge 都用这套小写名字。
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Fabric => "fabric",
+            Self::Forge => "forge",
+            Self::NeoForge => "neoforge",
+            Self::Quilt => "quilt",
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, ValueEnum)]
 #[value(rename_all = "lowercase")]
 pub enum Platform {

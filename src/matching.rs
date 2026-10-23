@@ -160,6 +160,9 @@ mod tests {
             project_id: project_id.to_string(),
             version_number: "1.0.0".to_string(),
             version_type: "release".to_string(),
+            date_published: "2026-01-01T00:00:00Z".to_string(),
+            game_versions: vec!["1.21.1".to_string()],
+            loaders: vec!["fabric".to_string()],
             files: Vec::new(),
         }
     }
