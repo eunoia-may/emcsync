@@ -1,2 +1,37 @@
 _version: 1
+
+app.about: "复现 Minecraft 实例的内容资源"
+
+help.usage_heading: "用法："
+help.commands_heading: "命令："
+help.args_heading: "参数："
+help.options_heading: "选项："
+
+help.sync_usage: "sync <source_dir> <target_dir> -v <mc_version> -l <loader> -p <platform> [-y] [-d]"
+help.help_usage: "help"
+
+help.sync_about: "同步资源"
+help.help_about: "显示此帮助"
+
+help.source_dir: "提取源，即原实例的目录，含空格时用引号包裹"
+help.target_dir: "复现目标，即待复现实例的目录，含空格时用引号包裹"
+
+help.opt_version: "复现的资源所属的 Minecraft 版本"
+help.opt_loader: "加载器：fabric、forge、neoforge、quilt"
+help.opt_prefer: "优先获取资源的平台：modrinth、curseforge"
+help.opt_yes: "预同意，跳过询问"
+help.opt_dry_run: "只展示变化，不实际安装"
+help.opt_help: "显示此帮助"
+help.opt_program_version: "显示程序版本"
+
+error.prefix: "错误："
+error.separator: "、"
+error.unknown_subcommand: "未知子命令：%{name}"
+error.unknown_argument: "无法识别的参数：%{name}"
+error.missing_subcommand: "缺少子命令"
+error.missing_required: "缺少必需参数：%{names}"
+error.invalid_value: "%{arg} 没有这个值：%{value}，可选 %{valid}"
+error.suggestion: "是不是想输入 %{value}？"
+error.help_hint: "运行 `%{program} help` 查看用法"
+
 sync.not_implemented: "sync 尚未实现，目前只有命令行骨架。"

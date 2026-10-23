@@ -49,13 +49,13 @@
 
 - [x] cargo 初始化与依赖落地 — 产出：`Cargo.toml`、`Cargo.lock`、`src/`、`locales/`、`.gitignore`
 
-- [ ] CLI 收尾：关自动 help、按 locale 手写 help、补 i18n 文案、tty 判断 — 下个会话
+- [x] CLI 收尾：关自动 help、按 locale 手写 help、补 i18n 文案、tty 判断 — 产出：`src/cli/`、`src/ui.rs`、`locales/*.yml`
 
 ## 现在做了什么，下一步该做什么
 每个阶段完成或中止后，用最短的话写：做了什么、下一步做什么、该读哪个文件。最新在上，完成的划掉。
 
-- 刚完成：cargo 初始化与依赖落地。`Cargo.lock` 入库，`cargo build` / `clippy` / `fmt` 通过；依赖与版本见 `工程-依赖与库的说明.md`。
+- 刚完成：CLI 收尾。clap 自动 help 关掉，`help` / `-h` / `--help` 解析前统一拦截，按 locale 输出手写文案；常见 clap 错误本地化并附建议；颜色走 anstream 自动降级；tty 判断留给安装确认。`build` / `clippy` / `fmt` / `test` 通过。
 
-- 下一步：CLI 收尾（关掉 clap 自动 help、按 locale 手写 help、补 i18n 文案、tty 判断），读 `规范-命令设计与简单演示.md`、`执行流-sync-人性化纠错.md`。
+- 下一步：sync 的扫描与资源匹配（先把源/目标扫描、SHA-1、Modrinth 反查与差集跑通），读 `执行流-sync-资源匹配.md`、`规范-命令设计与简单演示.md`。
 
-- 已划掉：~~写初始提示~~、~~把环境搭建说明独立成文~~、~~优化提示~~、~~cargo 初始化与依赖落地~~。
+- 已划掉：~~写初始提示~~、~~把环境搭建说明独立成文~~、~~优化提示~~、~~cargo 初始化与依赖落地~~、~~CLI 收尾~~。

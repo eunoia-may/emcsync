@@ -1,2 +1,37 @@
 _version: 1
+
+app.about: "Reproduce the content resources of a Minecraft instance"
+
+help.usage_heading: "Usage:"
+help.commands_heading: "Commands:"
+help.args_heading: "Arguments:"
+help.options_heading: "Options:"
+
+help.sync_usage: "sync <source_dir> <target_dir> -v <mc_version> -l <loader> -p <platform> [-y] [-d]"
+help.help_usage: "help"
+
+help.sync_about: "sync resources"
+help.help_about: "show this help"
+
+help.source_dir: "source instance directory; quote it if the path has spaces"
+help.target_dir: "target instance directory; quote it if the path has spaces"
+
+help.opt_version: "Minecraft version the resources belong to"
+help.opt_loader: "loader: fabric, forge, neoforge, quilt"
+help.opt_prefer: "preferred platform: modrinth, curseforge"
+help.opt_yes: "assume yes, skip the confirmation"
+help.opt_dry_run: "show changes without installing"
+help.opt_help: "show this help"
+help.opt_program_version: "show program version"
+
+error.prefix: "error: "
+error.separator: ", "
+error.unknown_subcommand: "unrecognized subcommand: %{name}"
+error.unknown_argument: "unknown argument: %{name}"
+error.missing_subcommand: "no subcommand given"
+error.missing_required: "missing required argument: %{names}"
+error.invalid_value: "invalid value %{value} for %{arg}; expected one of %{valid}"
+error.suggestion: "did you mean %{value}?"
+error.help_hint: "run `%{program} help` for usage"
+
 sync.not_implemented: "sync is not implemented yet; only the CLI skeleton exists."
