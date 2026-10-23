@@ -1,0 +1,2 @@
+_version: 1
+sync.not_implemented: "sync 尚未实现，目前只有命令行骨架。"

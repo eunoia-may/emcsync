@@ -1,0 +1,22 @@
+# cargo 构建产物，随时可重建，不入库
+/target/
+
+# 本机 cargo 缓存（本环境的 ~/.cargo 只读，构建时改放这里），不属于源码
+/.cache/
+
+# nix build 生成的 result 符号链接，指向 store，不入库
+/result
+/result-*
+
+# direnv 生成的环境缓存，属于本机状态
+.direnv/
+
+# 需要保密的本地配置，例如 CurseForge 的 x-api-key
+.env
+.env.*
+
+# 编辑器与系统产生的噪声
+.vscode/
+.idea/
+*.swp
+.DS_Store

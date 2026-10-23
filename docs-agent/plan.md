@@ -45,13 +45,15 @@
 
 - [x] flake.nix（仅 devShell）— 产出：`flake.nix`，配置见 `工程-依赖与库的说明.md`
 
-- [ ] cargo 初始化与依赖落地 — 下个会话
+- [x] cargo 初始化与依赖落地 — 产出：`Cargo.toml`、`Cargo.lock`、`src/`、`locales/`、`.gitignore`
+
+- [ ] CLI 收尾：关自动 help、按 locale 手写 help、补 i18n 文案、tty 判断 — 下个会话
 
 ## 现在做了什么，下一步该做什么
 每个阶段完成或中止后，用最短的话写：做了什么、下一步做什么、该读哪个文件。最新在上，完成的划掉。
 
-- 刚完成：`flake.nix`（仅 `devShell`）与初始提示优化。依赖见 `工程-依赖与库的说明.md`。
+- 刚完成：cargo 初始化与依赖落地。`Cargo.lock` 入库，`cargo build` / `clippy` / `fmt` 通过；依赖与版本见 `工程-依赖与库的说明.md`。
 
-- 下一步：人工跑通 `nix develop`；下个会话 `cargo init` 后落依赖；CurseForge 延后。
+- 下一步：CLI 收尾（关掉 clap 自动 help、按 locale 手写 help、补 i18n 文案、tty 判断），读 `规范-命令设计与简单演示.md`、`执行流-sync-人性化纠错.md`。
 
-- 已划掉：~~写初始提示~~、~~把环境搭建说明独立成文~~、~~优化提示~~。
+- 已划掉：~~写初始提示~~、~~把环境搭建说明独立成文~~、~~优化提示~~、~~cargo 初始化与依赖落地~~。

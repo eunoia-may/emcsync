@@ -1,0 +1,2 @@
+_version: 1
+sync.not_implemented: "sync is not implemented yet; only the CLI skeleton exists."
