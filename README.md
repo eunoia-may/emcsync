@@ -14,7 +14,7 @@
 
 ### 预编译产物
 
-从 [Releases](https://github.com/Eunoia-May/emcsync-cli/releases) 下载对应平台的一份：
+从 [Releases](https://github.com/eunoia-may/emcsync-cli/releases) 下载对应平台的一份：
 
 | 平台 | 文件 |
 | --- | --- |
@@ -34,7 +34,7 @@ Windows 解压到任意目录即是安装，删掉目录即是卸载；配置与
 在 `flake.nix` 的 `inputs` 里加：
 
 ```nix
-inputs.emcsync-cli.url = "github:Eunoia-May/emcsync-cli";
+inputs.emcsync-cli.url = "github:eunoia-may/emcsync-cli";
 ```
 
 在模块列表里引用本项目模块，项目只把包挂进 `pkgs`，需主动声明包来安装：

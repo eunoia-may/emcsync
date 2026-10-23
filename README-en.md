@@ -14,7 +14,7 @@ It is not limited to mods: resource packs and shader packs can also be installed
 
 ### Prebuilt binaries
 
-Download the archive for your platform from [Releases](https://github.com/Eunoia-May/emcsync-cli/releases):
+Download the archive for your platform from [Releases](https://github.com/eunoia-may/emcsync-cli/releases):
 
 | Platform | File |
 | --- | --- |
@@ -34,7 +34,7 @@ On Windows, unpacking to any directory is the installation; deleting the directo
 Add the input in your `flake.nix`:
 
 ```nix
-inputs.emcsync-cli.url = "github:Eunoia-May/emcsync-cli";
+inputs.emcsync-cli.url = "github:eunoia-may/emcsync-cli";
 ```
 
 Reference the module in your module list. The project only puts the package into `pkgs`; you need to declare the package to install it:
