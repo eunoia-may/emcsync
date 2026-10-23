@@ -2,9 +2,13 @@
 
 只是当下能搜索到的最主流与合适的做法，后续如有需要应重新审阅、搜索，并在需要时修改执行流。
 
+当前只做 Modrinth。CurseForge 相关的内容按设计保留，暂不实现。
+
 ## 扫描
 
 分别扫描源目录和目标目录下的 `mods`、`resourcepacks`、`shaderpacks` 三个文件夹，收集所有 `.jar` 和 `.zip` 文件。不递归子目录，跳过隐藏文件。对每个文件计算两种哈希：小写的 SHA-1（给 Modrinth 用）和 MurmurHash2（给 CurseForge 用，计算前剥离空白字符，seed 为 1）。
+
+资源类型由所在目录决定：`mods` → `mod`，`resourcepacks` → `resourcepack`，`shaderpacks` → `shaderpack`。
 
 ## 反查
 
@@ -39,3 +43,13 @@ CurseForge 这边还要多看一眼：部分模组禁用了第三方下载，`do
 - **无法匹配**：直接显示原始文件名，如 `sjaks.jar`。这些文件不参与差集，也不影响同步结果，只是告知用户“已忽略”。
 
 每类内部按名称正向排序。
+
+## 安装
+
+按资源类型落回目标目录对应的子目录，文件名用平台返回的 `filename`：
+
+- `mod` → `mods/`
+- `resourcepack` → `resourcepacks/`
+- `shaderpack` → `shaderpacks/`
+
+子目录缺失时随安装一并创建，不单独提问：缺了哪些写进确认提示，与安装确认合成一次询问。带 `-y` 直接创建，`--dry-run` 只提示不创建。目标实例目录本身不存在则直接报错退出。
