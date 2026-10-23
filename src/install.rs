@@ -24,26 +24,36 @@ pub async fn install(
             .with_context(|| t!("sync.create_dir_failed", path = kind.folder()).to_string())?;
     }
 
-    for item in items {
-        download(client, item, target).await.with_context(|| {
-            t!(
-                "sync.install_item_failed",
-                name = item.project.slug.as_str()
-            )
-            .to_string()
-        })?;
+    let total = items.len();
+    for (index, item) in items.iter().enumerate() {
+        download(client, item, target, index + 1, total)
+            .await
+            .with_context(|| {
+                t!(
+                    "sync.install_item_failed",
+                    name = item.project.slug.as_str()
+                )
+                .to_string()
+            })?;
     }
 
     Ok(())
 }
 
-async fn download(client: &Client, item: &InstallItem, target: &Path) -> Result<()> {
+async fn download(
+    client: &Client,
+    item: &InstallItem,
+    target: &Path,
+    index: usize,
+    count: usize,
+) -> Result<()> {
     let dest = plan::install_path(target, item.kind, &item.file.filename);
     let part = dest.with_file_name(format!("{}.part", item.file.filename));
 
     let response = client.download(&item.file.url).await?;
     let total = response.content_length().unwrap_or(0);
-    let bar = progress_bar(total, &item.file.filename);
+    let label = format!("[{index}/{count}] {}", item.file.filename);
+    let bar = progress_bar(total, &label);
 
     let mut file = tokio::fs::File::create(&part).await?;
 
@@ -84,18 +94,18 @@ async fn copy(
 }
 
 /// 知道总长度就给百分比，不知道就给转圈加已下载字节。
-fn progress_bar(total: u64, file_name: &str) -> ProgressBar {
+fn progress_bar(total: u64, label: &str) -> ProgressBar {
     if total == 0 {
         let bar = ProgressBar::new_spinner()
             .with_style(spinner_style())
-            .with_message(file_name.to_string());
+            .with_message(label.to_string());
         bar.enable_steady_tick(Duration::from_millis(120));
         return bar;
     }
 
     ProgressBar::new(total)
         .with_style(bar_style())
-        .with_message(file_name.to_string())
+        .with_message(label.to_string())
 }
 
 fn bar_style() -> ProgressStyle {

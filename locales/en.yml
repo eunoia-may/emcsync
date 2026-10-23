@@ -47,7 +47,7 @@ sync.heading_unavailable: "These resources have no compatible version and will n
 sync.heading_existing: "The following resources already exist in this instance and will be skipped"
 sync.heading_unmatched: "The following resources could not be matched on the platforms and are ignored"
 sync.nothing_missing: "Nothing to install."
-sync.creating_dirs: "These folders do not exist yet and will be created along with the installation: %{folders}"
+sync.creating_dirs: "These folders do not exist yet and will be created during installation: %{folders}"
 sync.confirm_install: "Install these resources?"
 sync.cancelled: "Cancelled; nothing was installed."
 sync.non_interactive: "confirmation needs an interactive terminal; pass -y to install without asking."

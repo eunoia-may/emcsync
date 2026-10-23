@@ -15,6 +15,11 @@ const API_BASE: &str = "https://api.modrinth.com/v2";
 const HASH_CHUNK: usize = 500;
 const PROJECT_CHUNK: usize = 500;
 
+// 单次 API 调用可以整体限时；下载体积不可控，只能限制连接和每次读取的等待。
+const API_TIMEOUT: Duration = Duration::from_secs(30);
+const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
+const READ_TIMEOUT: Duration = Duration::from_secs(30);
+
 #[derive(Clone, Debug, Deserialize)]
 pub struct Version {
     pub id: String,
@@ -86,7 +91,8 @@ impl Client {
 
         let http = reqwest::Client::builder()
             .user_agent(user_agent)
-            .timeout(Duration::from_secs(30))
+            .connect_timeout(CONNECT_TIMEOUT)
+            .read_timeout(READ_TIMEOUT)
             .build()?;
 
         Ok(Self { http })
@@ -109,6 +115,7 @@ impl Client {
             let response = self
                 .http
                 .post(format!("{API_BASE}/version_files"))
+                .timeout(API_TIMEOUT)
                 .json(&body)
                 .send()
                 .await?;
@@ -131,6 +138,7 @@ impl Client {
             let response = self
                 .http
                 .get(format!("{API_BASE}/projects"))
+                .timeout(API_TIMEOUT)
                 .query(&[("ids", ids)])
                 .send()
                 .await?;
@@ -162,6 +170,7 @@ impl Client {
         let response = self
             .http
             .get(format!("{API_BASE}/project/{project_id}/version"))
+            .timeout(API_TIMEOUT)
             .query(&query[..])
             .send()
             .await?;

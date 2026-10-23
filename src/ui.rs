@@ -19,8 +19,10 @@ pub fn print_stderr(text: &str) {
 }
 
 /// 打印运行时错误并以 1 退出。
+///
+/// `{err:#}` 带上整条错误链，否则只剩“安装 X 失败”，用户看不到真正原因。
 pub fn fail(err: &anyhow::Error) -> ExitCode {
-    print_stderr(&format!("{}{err}\n", error_label(&t!("error.prefix"))));
+    print_stderr(&format!("{}{err:#}\n", error_label(&t!("error.prefix"))));
     ExitCode::FAILURE
 }
 
