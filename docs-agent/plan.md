@@ -64,6 +64,6 @@
 
 - 刚完成：flake 补 packages.default。`nix build` 产出 `emcsync-cli-0.1.0`，构建时跑通 16 项单测；源码只收 `Cargo.toml`、`Cargo.lock`、`src/`、`locales/`，`target/` 与 `.cache/` 不进 store。`nix run . -- --version`、`nix flake check --no-build` 通过。
 
-- 下一步：CurseForge 暂不接，本轮作为 0.1 收尾（需要时再从 MurmurHash2 与 `x-api-key` 开始）。读 `执行流-sync-资源匹配.md` 与 `工程-依赖与库的说明.md`。
+- 下一步：编写 README，编译，推送项目到 GitHub，做 Flakes 安装支持；CurseForge 暂不接，本轮作为 0.1 收尾（需要时再从 MurmurHash2 与 `x-api-key` 开始）。读 `执行流-sync-资源匹配.md` 与 `工程-依赖与库的说明.md`。
 
 - 已划掉：~~写初始提示~~、~~把环境搭建说明独立成文~~、~~优化提示~~、~~cargo 初始化与依赖落地~~、~~CLI 收尾~~、~~sync 扫描与资源匹配~~、~~查兼容版本与安装~~、~~真实实例整跑~~。
