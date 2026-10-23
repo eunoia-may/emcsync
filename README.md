@@ -10,6 +10,60 @@
 
 不仅是模组，资源包、光影包也能自动、批量跨版本安装；已安装的模组、当前版本或加载器不支持的模组，也会附上提示。
 
+## 安装
+
+### 预编译产物
+
+从 [Releases](https://github.com/Eunoia-May/emcsync-cli/releases) 下载对应平台的一份：
+
+| 平台 | 文件 |
+| --- | --- |
+| Linux x86_64 | `emcsync-cli-<版本>-x86_64-unknown-linux-musl.tar.gz` |
+| Linux aarch64 | `emcsync-cli-<版本>-aarch64-unknown-linux-musl.tar.gz` |
+| Windows x86_64 | `emcsync-cli-<版本>-x86_64-pc-windows-msvc.zip` |
+| Windows aarch64 | `emcsync-cli-<版本>-aarch64-pc-windows-msvc.zip` |
+| macOS x86_64 | `emcsync-cli-<版本>-x86_64-apple-darwin.tar.gz` |
+| macOS aarch64 | `emcsync-cli-<版本>-aarch64-apple-darwin.tar.gz` |
+
+Linux 与 macOS 解压后 `chmod +x emcsync-cli`，放进 `PATH` 即可。macOS 产物未签名，首次运行会被 Gatekeeper 拦一次，到“系统设置 → 隐私与安全性”里放行。
+
+Windows 解压到任意目录即是安装，删掉目录即是卸载；配置与缓存都写在游戏实例目录里，不留全局痕迹。
+
+### NixOS 与 home-manager
+
+在 `flake.nix` 的 `inputs` 里加：
+
+```nix
+inputs.emcsync-cli.url = "github:Eunoia-May/emcsync-cli";
+```
+
+在模块列表里引用本项目模块，项目只把包挂进 `pkgs`，装不装由你决定：
+
+```nix
+# NixOS：flake.nix 里 nixosConfigurations.<主机>.modules 中加一行
+inputs.emcsync-cli.nixosModules.default
+
+# home-manager：home.nix 或 flake.nix 的 imports 里加一行
+inputs.emcsync-cli.homeModules.default
+```
+
+然后在包列表里写包名：
+
+```nix
+environment.systemPackages = with pkgs; [ emcsync-cli ];  # home-manager 用 home.packages
+```
+
+不想用 overlay 也可以直接写 `inputs.emcsync-cli.packages.${pkgs.stdenv.hostPlatform.system}.default`，等同于装一份固定的包。
+
+### 从源码
+
+需要 Rust 1.99 以上，或直接用 `nix develop` 进环境：
+
+```sh
+cargo build --release
+# 产物在 target/release/emcsync-cli
+```
+
 ## 用法
 
 ```text

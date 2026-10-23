@@ -64,6 +64,6 @@
 ## 现在做了什么，下一步该做什么
 每个阶段完成或中止后，用最短的话写：做了什么、下一步做什么、该读哪个文件。最新在上，完成的划掉。
 
-- 刚完成：flake 补 packages.default。`nix build` 产出 `emcsync-cli-0.1.0`，构建时跑通 16 项单测；源码只收 `Cargo.toml`、`Cargo.lock`、`src/`、`locales/`，`target/` 与 `.cache/` 不进 store。`nix run . -- --version`、`nix flake check --no-build` 通过。
+- 刚完成：打包侧的本地部分。`package.nix` 抽出，flake 出 `overlays`、`nixosModules`、`homeModules`，overlay 转发到的与 `packages` 是同一份 derivation；`Cargo.toml` 补 MIT 与仓库地址；`.github/workflows/release.yml` 六目标矩阵；README 双语补安装段。本地 `nix build`、`nix flake check`、`cargo test` 16 项全过，CI 未跑。
 
-- 下一步：读 `工程-打包与推送.md`
+- 下一步：提交并推远端，打 `v0.1.0` 看 Release 六份产物；随后接 Cachix。读 `工程-打包与推送.md`

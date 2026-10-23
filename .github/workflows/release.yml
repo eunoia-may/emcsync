@@ -1,0 +1,118 @@
+# 打 v* 标签时，在六个平台上各自原生编译、打包、上传到该标签的 Release。
+# 产物统一由 cargo build 出，不用 nix build 出：Nix 在 Windows 上跑不了。
+name: release
+
+on:
+  push:
+    tags: [ "v*" ]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.target }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            target: x86_64-unknown-linux-musl
+            archive: tar.gz
+          - os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-musl
+            archive: tar.gz
+          # windows-11-arm 需要仓库公开；若该 runner 不可用，删掉这一项即可
+          - os: windows-11-arm
+            target: aarch64-pc-windows-msvc
+            archive: zip
+          - os: windows-2025
+            target: x86_64-pc-windows-msvc
+            archive: zip
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
+            archive: tar.gz
+          - os: macos-15
+            target: aarch64-apple-darwin
+            archive: tar.gz
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 校验标签与 Cargo.toml 版本一致
+        shell: bash
+        run: |
+          tag_version="${GITHUB_REF_NAME#v}"
+          cargo_version=$(cargo metadata --format-version 1 --no-deps | jq -r '.packages[0].version')
+          if [ "$tag_version" != "$cargo_version" ]; then
+            echo "标签 ${GITHUB_REF_NAME} 与 Cargo.toml 的版本 ${cargo_version} 不一致" >&2
+            exit 1
+          fi
+
+      - name: 装 musl 工具链
+        if: contains(matrix.target, '-musl')
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+          upper=$(echo "${{ matrix.target }}" | tr 'a-z-' 'A-Z_')
+          # 静态链接用 musl-gcc 当链接器，C 依赖（rustls 的 aws-lc-sys）也走它
+          echo "CARGO_TARGET_${upper}_LINKER=musl-gcc" >> "$GITHUB_ENV"
+          echo "CC_$(echo "${{ matrix.target }}" | tr '-' '_')=musl-gcc" >> "$GITHUB_ENV"
+
+      - name: 装 target
+        shell: bash
+        run: rustup target add ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: 编译
+        shell: bash
+        run: cargo build --release --locked --target ${{ matrix.target }}
+
+      - name: 打包 tar.gz
+        if: matrix.archive == 'tar.gz'
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          name="emcsync-cli-${version}-${{ matrix.target }}"
+          mkdir -p "dist/${name}"
+          cp "target/${{ matrix.target }}/release/emcsync-cli" "dist/${name}/"
+          cp README.md LICENSE "dist/${name}/"
+          tar -czf "dist/${name}.tar.gz" -C dist "${name}"
+
+      - name: 打包 zip
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        run: |
+          $version = $env:GITHUB_REF_NAME -replace '^v', ''
+          $name = "emcsync-cli-$version-${{ matrix.target }}"
+          New-Item -ItemType Directory -Force "dist/$name" | Out-Null
+          Copy-Item "target/${{ matrix.target }}/release/emcsync-cli.exe" "dist/$name/"
+          Copy-Item README.md, LICENSE "dist/$name/"
+          Compress-Archive -Path "dist/$name" -DestinationPath "dist/$name.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}
+          path: |
+            dist/*.tar.gz
+            dist/*.zip
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      # 等六个产物齐了再一次建 Release，避免并发写同一个 Release 打架
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
