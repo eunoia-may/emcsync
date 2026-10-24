@@ -1,6 +1,6 @@
 [package]
 name = "emcsync"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 description = "复现 Minecraft 实例的内容资源"
 license = "MIT"
