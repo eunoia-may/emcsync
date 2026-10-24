@@ -2,8 +2,8 @@
 //!
 //! 四类按“待安装、此版本不存在、已存在、无法匹配”的顺序输出，类内按名称排序。
 
-use emcsync_cli::matching::{MatchResult, Resolved};
-use emcsync_cli::plan::{InstallItem, Plan};
+use emcsync::matching::{MatchResult, Resolved};
+use emcsync::plan::{InstallItem, Plan};
 use rust_i18n::t;
 
 use crate::ui;

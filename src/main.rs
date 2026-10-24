@@ -8,7 +8,7 @@ mod ui;
 use std::process::ExitCode;
 
 use anyhow::Result;
-use emcsync_cli::{matching, modrinth, plan, scan};
+use emcsync::{matching, modrinth, plan, scan};
 use rust_i18n::t;
 
 rust_i18n::i18n!("locales", fallback = "en");

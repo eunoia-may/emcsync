@@ -1,6 +1,6 @@
 English | [简体中文](README.md)
 
-# eunoia-mc-content-sync-cli
+# emcsync
 
 ## What is this?
 
@@ -14,18 +14,18 @@ It is not limited to mods: resource packs and shader packs can also be installed
 
 ### Prebuilt binaries
 
-Download the archive for your platform from [Releases](https://github.com/eunoia-may/emcsync-cli/releases):
+Download the archive for your platform from [Releases](https://github.com/eunoia-may/emcsync/releases):
 
 | Platform | File |
 | --- | --- |
-| Linux x86_64 | `emcsync-cli-<version>-x86_64-unknown-linux-musl.tar.gz` |
-| Linux aarch64 | `emcsync-cli-<version>-aarch64-unknown-linux-musl.tar.gz` |
-| Windows x86_64 | `emcsync-cli-<version>-x86_64-pc-windows-msvc.zip` |
-| Windows aarch64 | `emcsync-cli-<version>-aarch64-pc-windows-msvc.zip` |
-| macOS x86_64 | `emcsync-cli-<version>-x86_64-apple-darwin.tar.gz` |
-| macOS aarch64 | `emcsync-cli-<version>-aarch64-apple-darwin.tar.gz` |
+| Linux x86_64 | `emcsync-<version>-x86_64-unknown-linux-musl.tar.gz` |
+| Linux aarch64 | `emcsync-<version>-aarch64-unknown-linux-musl.tar.gz` |
+| Windows x86_64 | `emcsync-<version>-x86_64-pc-windows-msvc.zip` |
+| Windows aarch64 | `emcsync-<version>-aarch64-pc-windows-msvc.zip` |
+| macOS x86_64 | `emcsync-<version>-x86_64-apple-darwin.tar.gz` |
+| macOS aarch64 | `emcsync-<version>-aarch64-apple-darwin.tar.gz` |
 
-On Linux and macOS, unpack the archive, run `chmod +x emcsync-cli`, and put it on your `PATH`. The macOS builds are unsigned, so Gatekeeper blocks the first run: allow it under System Settings → Privacy & Security.
+On Linux and macOS, unpack the archive, run `chmod +x emcsync`, and put it on your `PATH`. The macOS builds are unsigned, so Gatekeeper blocks the first run: allow it under System Settings → Privacy & Security.
 
 On Windows, unpacking to any directory is the installation; deleting the directory removes it. Configs and caches live inside the game instance directory, leaving nothing global behind.
 
@@ -34,26 +34,26 @@ On Windows, unpacking to any directory is the installation; deleting the directo
 Add the input in your `flake.nix`:
 
 ```nix
-inputs.emcsync-cli.url = "github:eunoia-may/emcsync-cli";
+inputs.emcsync.url = "github:eunoia-may/emcsync";
 ```
 
 Reference the module in your module list. The project only puts the package into `pkgs`; you need to declare the package to install it:
 
 ```nix
 # NixOS: one line in nixosConfigurations.<host>.modules
-inputs.emcsync-cli.nixosModules.default
+inputs.emcsync.nixosModules.default
 
 # home-manager: one line in the imports of home.nix or flake.nix
-inputs.emcsync-cli.homeModules.default
+inputs.emcsync.homeModules.default
 ```
 
 Then list the package name:
 
 ```nix
-environment.systemPackages = with pkgs; [ emcsync-cli ];  # home.packages for home-manager
+environment.systemPackages = with pkgs; [ emcsync ];  # home.packages for home-manager
 ```
 
-If you prefer no overlay, you can also use `inputs.emcsync-cli.packages.${pkgs.stdenv.hostPlatform.system}.default` to install a fixed build.
+If you prefer no overlay, you can also use `inputs.emcsync.packages.${pkgs.stdenv.hostPlatform.system}.default` to install a fixed build.
 
 ### From source
 
@@ -61,14 +61,14 @@ Requires Rust 1.99 or newer, or just `nix develop`:
 
 ```sh
 cargo build --release
-# the binary lands in target/release/emcsync-cli
+# the binary lands in target/release/emcsync
 ```
 
 ## Usage
 
 ```text
-emcsync-cli sync <source_dir> <target_dir> -v <mc_version> -l <loader> -p <platform> [-y] [-d]
-emcsync-cli help
+emcsync sync <source_dir> <target_dir> -v <mc_version> -l <loader> -p <platform> [-y] [-d]
+emcsync help
 ```
 
 `help`, `-h`, and `--help` all print the help.

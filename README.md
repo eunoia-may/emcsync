@@ -1,6 +1,6 @@
 [English](README-en.md) | 简体中文
 
-# eunoia-mc-content-sync-cli
+# emcsync
 
 ## 这是什么？
 
@@ -14,18 +14,18 @@
 
 ### 预编译产物
 
-从 [Releases](https://github.com/eunoia-may/emcsync-cli/releases) 下载对应平台的一份：
+从 [Releases](https://github.com/eunoia-may/emcsync/releases) 下载对应平台的一份：
 
 | 平台 | 文件 |
 | --- | --- |
-| Linux x86_64 | `emcsync-cli-<版本>-x86_64-unknown-linux-musl.tar.gz` |
-| Linux aarch64 | `emcsync-cli-<版本>-aarch64-unknown-linux-musl.tar.gz` |
-| Windows x86_64 | `emcsync-cli-<版本>-x86_64-pc-windows-msvc.zip` |
-| Windows aarch64 | `emcsync-cli-<版本>-aarch64-pc-windows-msvc.zip` |
-| macOS x86_64 | `emcsync-cli-<版本>-x86_64-apple-darwin.tar.gz` |
-| macOS aarch64 | `emcsync-cli-<版本>-aarch64-apple-darwin.tar.gz` |
+| Linux x86_64 | `emcsync-<版本>-x86_64-unknown-linux-musl.tar.gz` |
+| Linux aarch64 | `emcsync-<版本>-aarch64-unknown-linux-musl.tar.gz` |
+| Windows x86_64 | `emcsync-<版本>-x86_64-pc-windows-msvc.zip` |
+| Windows aarch64 | `emcsync-<版本>-aarch64-pc-windows-msvc.zip` |
+| macOS x86_64 | `emcsync-<版本>-x86_64-apple-darwin.tar.gz` |
+| macOS aarch64 | `emcsync-<版本>-aarch64-apple-darwin.tar.gz` |
 
-Linux 与 macOS 解压后 `chmod +x emcsync-cli`，放进 `PATH` 即可。macOS 产物未签名，首次运行会被 Gatekeeper 拦一次，到“系统设置 → 隐私与安全性”里放行。
+Linux 与 macOS 解压后 `chmod +x emcsync`，放进 `PATH` 即可。macOS 产物未签名，首次运行会被 Gatekeeper 拦一次，到“系统设置 → 隐私与安全性”里放行。
 
 Windows 解压到任意目录即是安装，删掉目录即是卸载；配置与缓存都写在游戏实例目录里，不留全局痕迹。
 
@@ -34,26 +34,26 @@ Windows 解压到任意目录即是安装，删掉目录即是卸载；配置与
 在 `flake.nix` 的 `inputs` 里加：
 
 ```nix
-inputs.emcsync-cli.url = "github:eunoia-may/emcsync-cli";
+inputs.emcsync.url = "github:eunoia-may/emcsync";
 ```
 
 在模块列表里引用本项目模块，项目只把包挂进 `pkgs`，需主动声明包来安装：
 
 ```nix
 # NixOS：flake.nix 里 nixosConfigurations.<主机>.modules 中加一行
-inputs.emcsync-cli.nixosModules.default
+inputs.emcsync.nixosModules.default
 
 # home-manager：home.nix 或 flake.nix 的 imports 里加一行
-inputs.emcsync-cli.homeModules.default
+inputs.emcsync.homeModules.default
 ```
 
 然后在包列表里写包名：
 
 ```nix
-environment.systemPackages = with pkgs; [ emcsync-cli ];  # home-manager 用 home.packages
+environment.systemPackages = with pkgs; [ emcsync ];  # home-manager 用 home.packages
 ```
 
-不想用 overlay 也可以直接写 `inputs.emcsync-cli.packages.${pkgs.stdenv.hostPlatform.system}.default`，等同于装一份固定的包。
+不想用 overlay 也可以直接写 `inputs.emcsync.packages.${pkgs.stdenv.hostPlatform.system}.default`，等同于装一份固定的包。
 
 ### 从源码
 
@@ -61,14 +61,14 @@ environment.systemPackages = with pkgs; [ emcsync-cli ];  # home-manager 用 hom
 
 ```sh
 cargo build --release
-# 产物在 target/release/emcsync-cli
+# 产物在 target/release/emcsync
 ```
 
 ## 用法
 
 ```text
-emcsync-cli sync <source_dir> <target_dir> -v <mc_version> -l <loader> -p <platform> [-y] [-d]
-emcsync-cli help
+emcsync sync <source_dir> <target_dir> -v <mc_version> -l <loader> -p <platform> [-y] [-d]
+emcsync help
 ```
 
 `help`、`-h`、`--help` 均可输出帮助。

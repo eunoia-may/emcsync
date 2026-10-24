@@ -1,10 +1,10 @@
 [package]
-name = "emcsync-cli"
+name = "emcsync"
 version = "0.1.0"
 edition = "2024"
 description = "复现 Minecraft 实例的内容资源"
 license = "MIT"
-repository = "https://github.com/eunoia-may/emcsync-cli"
+repository = "https://github.com/eunoia-may/emcsync"
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }

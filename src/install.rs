@@ -6,9 +6,9 @@ use std::path::Path;
 use std::time::Duration;
 
 use anyhow::{Context, Result};
-use emcsync_cli::modrinth::Client;
-use emcsync_cli::plan::{self, InstallItem};
-use emcsync_cli::scan::ResourceKind;
+use emcsync::modrinth::Client;
+use emcsync::plan::{self, InstallItem};
+use emcsync::scan::ResourceKind;
 use indicatif::{ProgressBar, ProgressStyle};
 use rust_i18n::t;
 use tokio::io::AsyncWriteExt;

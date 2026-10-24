@@ -77,9 +77,9 @@ jobs:
         shell: bash
         run: |
           version="${GITHUB_REF_NAME#v}"
-          name="emcsync-cli-${version}-${{ matrix.target }}"
+          name="emcsync-${version}-${{ matrix.target }}"
           mkdir -p "dist/${name}"
-          cp "target/${{ matrix.target }}/release/emcsync-cli" "dist/${name}/"
+          cp "target/${{ matrix.target }}/release/emcsync" "dist/${name}/"
           cp README.md LICENSE "dist/${name}/"
           tar -czf "dist/${name}.tar.gz" -C dist "${name}"
 
@@ -88,9 +88,9 @@ jobs:
         shell: pwsh
         run: |
           $version = $env:GITHUB_REF_NAME -replace '^v', ''
-          $name = "emcsync-cli-$version-${{ matrix.target }}"
+          $name = "emcsync-$version-${{ matrix.target }}"
           New-Item -ItemType Directory -Force "dist/$name" | Out-Null
-          Copy-Item "target/${{ matrix.target }}/release/emcsync-cli.exe" "dist/$name/"
+          Copy-Item "target/${{ matrix.target }}/release/emcsync.exe" "dist/$name/"
           Copy-Item README.md, LICENSE "dist/$name/"
           Compress-Archive -Path "dist/$name" -DestinationPath "dist/$name.zip"
 

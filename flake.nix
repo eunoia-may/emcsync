@@ -1,5 +1,5 @@
 {
-  description = "eunoia-mc-content-sync 开发环境";
+  description = "emcsync 开发环境";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -38,7 +38,7 @@
       # 必须转发到 self.packages.${system}.default：后者用 flake.lock 钉住的 nixpkgs，
       # 缓存能命中；若改用 callPackage 重建，则跟随用户自己的 nixpkgs，缓存永不命中。
       overlays.default = final: prev: {
-        emcsync-cli = self.packages.${prev.stdenv.hostPlatform.system}.default;
+        emcsync = self.packages.${prev.stdenv.hostPlatform.system}.default;
       };
 
       # NixOS 用户在 modules 列表里引用。

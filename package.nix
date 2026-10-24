@@ -2,7 +2,7 @@
 { lib, rustPlatform }:
 
 rustPlatform.buildRustPackage {
-  pname = "emcsync-cli";
+  pname = "emcsync";
   version = (lib.importTOML ./Cargo.toml).package.version;
 
   # 只收编译需要的文件；target、本地 cargo 缓存和测试实例都不进 store。
@@ -20,8 +20,8 @@ rustPlatform.buildRustPackage {
 
   meta = {
     description = "复现 Minecraft 实例的内容资源";
-    homepage = "https://github.com/eunoia-may/emcsync-cli";
+    homepage = "https://github.com/eunoia-may/emcsync";
     license = lib.licenses.mit;
-    mainProgram = "emcsync-cli";
+    mainProgram = "emcsync";
   };
 }

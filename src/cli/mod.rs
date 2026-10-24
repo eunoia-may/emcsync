@@ -13,7 +13,7 @@ use crate::ui;
 
 #[derive(Parser)]
 #[command(
-    name = "emcsync-cli",
+    name = "emcsync",
     version,
     disable_help_flag = true,
     disable_help_subcommand = true,
