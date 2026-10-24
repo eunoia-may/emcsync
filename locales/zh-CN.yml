@@ -51,6 +51,8 @@ sync.creating_dirs: "这些目录尚不存在，安装时会一并创建：%{fol
 sync.confirm_install: "确定安装吗？"
 sync.cancelled: "已取消，未安装任何资源。"
 sync.non_interactive: "确认安装需要交互式终端；可加 -y 直接安装。"
+sync.retrying: "网络请求失败，%{seconds} 秒后重连（第 %{attempt} 次）"
+sync.download_retrying: "下载中断，%{seconds} 秒后重连（第 %{attempt} 次）"
 sync.install_item_failed: "安装 %{name} 失败"
 sync.create_dir_failed: "创建目录 %{path} 失败"
 sync.install_failed: "资源复现失败，可查看报错获取原因："

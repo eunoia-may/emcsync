@@ -4,10 +4,14 @@
 //! 文档：<https://docs.modrinth.com/api/>
 
 use std::collections::{BTreeSet, HashMap};
+use std::sync::Arc;
 use std::time::Duration;
 
+use reqwest::header::RETRY_AFTER;
 use serde::Deserialize;
 use thiserror::Error;
+
+use crate::retry;
 
 const API_BASE: &str = "https://api.modrinth.com/v2";
 
@@ -65,10 +69,18 @@ pub enum ApiError {
     Request(#[from] reqwest::Error),
 
     #[error("Modrinth returned HTTP {status}: {body}")]
-    BadStatus { status: u16, body: String },
+    BadStatus {
+        status: u16,
+        body: String,
+        retry_after: Option<Duration>,
+    },
 
     #[error("download failed with HTTP {status}: {url}")]
-    Download { url: String, status: u16 },
+    Download {
+        url: String,
+        status: u16,
+        retry_after: Option<Duration>,
+    },
 
     #[error("failed to decode Modrinth response: {0}")]
     Decode(#[from] serde_json::Error),
@@ -77,17 +89,56 @@ pub enum ApiError {
     Task(#[from] tokio::task::JoinError),
 }
 
+impl ApiError {
+    /// 重连前的等待时间；`None` 表示这个错误不值得重试。
+    pub fn retry_delay(&self, attempt: usize) -> Option<Duration> {
+        match self {
+            Self::Request(err) if transient_request(err) => Some(retry::backoff(attempt)),
+            Self::BadStatus {
+                status,
+                retry_after,
+                ..
+            }
+            | Self::Download {
+                status,
+                retry_after,
+                ..
+            } if retry::transient_status(*status) => {
+                Some(retry_after.unwrap_or_else(|| retry::backoff(attempt)))
+            }
+            _ => None,
+        }
+    }
+}
+
+fn transient_request(err: &reqwest::Error) -> bool {
+    // reqwest 把流式读取响应体时的中断也归到 decode，这类错误同样值得重连。
+    err.is_connect() || err.is_timeout() || err.is_body() || err.is_decode() || err.is_request()
+}
+
+/// 重连前回调，用来向用户提示；库本身不直接打印。
+pub type RetryNotifier = Arc<dyn Fn(usize, Duration) + Send + Sync>;
+
 #[derive(Clone)]
 pub struct Client {
     http: reqwest::Client,
+    on_retry: Option<RetryNotifier>,
 }
 
 impl Client {
     /// Modrinth 要求带一个能识别调用方的 `User-Agent`，否则可能被限流或拦截。
     /// 需要时可设 `EMCSYNC_USER_AGENT` 覆盖。
     pub fn new() -> Result<Self, ApiError> {
+        Self::build(None)
+    }
+
+    pub fn with_retry_notifier(notifier: RetryNotifier) -> Result<Self, ApiError> {
+        Self::build(Some(notifier))
+    }
+
+    fn build(on_retry: Option<RetryNotifier>) -> Result<Self, ApiError> {
         let user_agent = std::env::var("EMCSYNC_USER_AGENT")
-            .unwrap_or_else(|_| format!("eunoia/emcsync-cli/{}", env!("CARGO_PKG_VERSION")));
+            .unwrap_or_else(|_| format!("eunoia/emcsync/{}", env!("CARGO_PKG_VERSION")));
 
         let http = reqwest::Client::builder()
             .user_agent(user_agent)
@@ -95,7 +146,45 @@ impl Client {
             .read_timeout(READ_TIMEOUT)
             .build()?;
 
-        Ok(Self { http })
+        Ok(Self { http, on_retry })
+    }
+
+    /// 发送已构建好的请求；瞬时故障按退避重连。
+    async fn send(&self, mut request: reqwest::Request) -> Result<String, ApiError> {
+        let mut attempt = 1;
+
+        loop {
+            let retry_request = request.try_clone();
+
+            match self.execute(request).await {
+                Ok(text) => return Ok(text),
+                Err(err) => {
+                    if attempt >= retry::MAX_ATTEMPTS {
+                        return Err(err);
+                    }
+
+                    let Some(wait) = err.retry_delay(attempt) else {
+                        return Err(err);
+                    };
+                    let Some(next) = retry_request else {
+                        return Err(err);
+                    };
+
+                    if let Some(notify) = &self.on_retry {
+                        notify(attempt, wait);
+                    }
+
+                    tokio::time::sleep(wait).await;
+                    request = next;
+                    attempt += 1;
+                }
+            }
+        }
+    }
+
+    async fn execute(&self, request: reqwest::Request) -> Result<String, ApiError> {
+        let response = self.http.execute(request).await?;
+        read_body(response).await
     }
 
     /// 一次反查多个 SHA-1；未命中的哈希不会出现在结果里。
@@ -112,14 +201,13 @@ impl Client {
                 "algorithm": "sha1",
             });
 
-            let response = self
+            let request = self
                 .http
                 .post(format!("{API_BASE}/version_files"))
                 .timeout(API_TIMEOUT)
                 .json(&body)
-                .send()
-                .await?;
-            let text = read_body(response).await?;
+                .build()?;
+            let text = self.send(request).await?;
 
             let found: HashMap<String, Version> = serde_json::from_str(&text)?;
             versions.extend(found);
@@ -135,14 +223,13 @@ impl Client {
         let mut projects = Vec::new();
         for chunk in unique.chunks(PROJECT_CHUNK) {
             let ids = serde_json::to_string(chunk)?;
-            let response = self
+            let request = self
                 .http
                 .get(format!("{API_BASE}/projects"))
                 .timeout(API_TIMEOUT)
                 .query(&[("ids", ids)])
-                .send()
-                .await?;
-            let text = read_body(response).await?;
+                .build()?;
+            let text = self.send(request).await?;
 
             let mut found: Vec<Project> = serde_json::from_str(&text)?;
             projects.append(&mut found);
@@ -167,28 +254,34 @@ impl Client {
             query.push(("loaders", serde_json::to_string(loaders)?));
         }
 
-        let response = self
+        let request = self
             .http
             .get(format!("{API_BASE}/project/{project_id}/version"))
             .timeout(API_TIMEOUT)
             .query(&query[..])
-            .send()
-            .await?;
-        let text = read_body(response).await?;
+            .build()?;
+        let text = self.send(request).await?;
         let versions: Vec<Version> = serde_json::from_str(&text)?;
 
         Ok(latest_release(versions))
     }
 
-    /// 发起下载，响应体交给调用方按块读取，不缓存到内存。
-    pub async fn download(&self, url: &str) -> Result<reqwest::Response, ApiError> {
-        let response = self.http.get(url).send().await?;
+    /// 发起下载；`offset` 非零时从断点续传，响应体交给调用方按块读取。
+    pub async fn download(&self, url: &str, offset: u64) -> Result<reqwest::Response, ApiError> {
+        let mut request = self.http.get(url);
+
+        if offset > 0 {
+            request = request.header(reqwest::header::RANGE, format!("bytes={offset}-"));
+        }
+
+        let response = request.send().await?;
         let status = response.status();
 
         if !status.is_success() {
             return Err(ApiError::Download {
                 url: url.to_string(),
                 status: status.as_u16(),
+                retry_after: retry_after(&response),
             });
         }
 
@@ -206,6 +299,7 @@ fn latest_release(versions: Vec<Version>) -> Option<Version> {
 
 async fn read_body(response: reqwest::Response) -> Result<String, ApiError> {
     let status = response.status();
+    let retry_after = retry_after(&response);
     let text = response.text().await?;
 
     if !status.is_success() {
@@ -213,17 +307,31 @@ async fn read_body(response: reqwest::Response) -> Result<String, ApiError> {
         return Err(ApiError::BadStatus {
             status: status.as_u16(),
             body,
+            retry_after,
         });
     }
 
     Ok(text)
 }
 
+/// `Retry-After` 只解析秒数形式；HTTP 日期形式交给指数退避。
+fn retry_after(response: &reqwest::Response) -> Option<Duration> {
+    let value = response.headers().get(RETRY_AFTER)?.to_str().ok()?;
+    parse_retry_after(value)
+}
+
+fn parse_retry_after(value: &str) -> Option<Duration> {
+    let seconds = value.trim().parse::<u64>().ok()?;
+
+    Some(Duration::from_secs(seconds.min(30)))
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
+    use std::time::Duration;
 
-    use super::{Version, latest_release};
+    use super::{ApiError, Version, latest_release, parse_retry_after};
 
     fn version(number: &str, version_type: &str, date: &str) -> Version {
         Version {
@@ -269,6 +377,77 @@ mod tests {
         version.files = vec![file("only.jar", false)];
 
         assert_eq!(version.primary_file().unwrap().filename, "only.jar");
+    }
+
+    #[test]
+    fn retry_after_header_is_preferred_for_retryable_statuses() {
+        let err = ApiError::BadStatus {
+            status: 503,
+            body: String::new(),
+            retry_after: Some(Duration::from_secs(7)),
+        };
+
+        assert_eq!(err.retry_delay(1), Some(Duration::from_secs(7)));
+    }
+
+    #[test]
+    fn other_client_errors_are_not_retried() {
+        let err = ApiError::BadStatus {
+            status: 404,
+            body: String::new(),
+            retry_after: None,
+        };
+
+        assert!(err.retry_delay(1).is_none());
+    }
+
+    #[test]
+    fn retry_after_only_accepts_seconds_and_is_capped() {
+        assert_eq!(parse_retry_after("5"), Some(Duration::from_secs(5)));
+        assert_eq!(parse_retry_after("120"), Some(Duration::from_secs(30)));
+        assert_eq!(parse_retry_after("Wed, 21 Oct 2015 07:28:00 GMT"), None);
+    }
+
+    #[tokio::test]
+    async fn download_resumes_with_a_range_header() {
+        use std::io::{Read, Write};
+        use std::net::TcpListener;
+
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+
+        let server = std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut request = Vec::new();
+            let mut buffer = [0u8; 512];
+
+            while !request.windows(4).any(|window| window == b"\r\n\r\n") {
+                let read = stream.read(&mut buffer).unwrap();
+                if read == 0 {
+                    break;
+                }
+                request.extend_from_slice(&buffer[..read]);
+            }
+
+            let request = String::from_utf8_lossy(&request).to_ascii_lowercase();
+            assert!(request.contains("range: bytes=5-"), "{request}");
+
+            stream
+                .write_all(
+                    b"HTTP/1.1 206 Partial Content\r\nContent-Length: 3\r\nContent-Range: bytes 5-7/8\r\n\r\nabc",
+                )
+                .unwrap();
+        });
+
+        let client = super::Client::new().unwrap();
+        let response = client
+            .download(&format!("http://{addr}/file"), 5)
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), reqwest::StatusCode::PARTIAL_CONTENT);
+        assert_eq!(response.text().await.unwrap(), "abc");
+        server.join().unwrap();
     }
 
     fn file(name: &str, primary: bool) -> super::VersionFile {

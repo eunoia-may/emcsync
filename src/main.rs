@@ -6,6 +6,7 @@ mod report;
 mod ui;
 
 use std::process::ExitCode;
+use std::sync::Arc;
 
 use anyhow::Result;
 use emcsync::{matching, modrinth, plan, scan};
@@ -77,7 +78,13 @@ async fn sync(args: cli::SyncArgs) -> Result<()> {
         return Ok(());
     }
 
-    let client = modrinth::Client::new()?;
+    let client = modrinth::Client::with_retry_notifier(Arc::new(|attempt, wait| {
+        ui::warn(&t!(
+            "sync.retrying",
+            attempt = attempt,
+            seconds = wait.as_secs().max(1)
+        ));
+    }))?;
     let result = matching::match_resources(&client, &source, &target).await?;
 
     if !result.missing.is_empty() {

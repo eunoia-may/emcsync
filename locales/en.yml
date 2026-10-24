@@ -51,6 +51,8 @@ sync.creating_dirs: "These folders do not exist yet and will be created during i
 sync.confirm_install: "Install these resources?"
 sync.cancelled: "Cancelled; nothing was installed."
 sync.non_interactive: "confirmation needs an interactive terminal; pass -y to install without asking."
+sync.retrying: "request failed; reconnecting in %{seconds}s (attempt %{attempt})"
+sync.download_retrying: "download interrupted; reconnecting in %{seconds}s (attempt %{attempt})"
 sync.install_item_failed: "failed to install %{name}"
 sync.create_dir_failed: "failed to create folder %{path}"
 sync.install_failed: "Resource reproduction failed; see the error below for details:"
