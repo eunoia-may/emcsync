@@ -1,9 +1,11 @@
 //! 下载待安装资源并落盘。
 //!
-//! 先写 `.part` 再改名，下载中断不会留下半个 jar；进度条在非 tty 时由 indicatif 自动隐藏。
-//! 网络中断时保留 `.part`，按 Range 续传并有限重连。
+//! 多个文件并发下载，先写 `.part` 再改名，下载中断不会留下半个 jar；
+//! 进度条在非 tty 时由 indicatif 自动隐藏。网络中断时保留 `.part`，按 Range 续传并有限重连。
 
+use std::collections::HashSet;
 use std::path::Path;
+use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::{Context, Result};
@@ -11,11 +13,14 @@ use emcsync::modrinth::{ApiError, Client};
 use emcsync::plan::{self, InstallItem};
 use emcsync::retry;
 use emcsync::scan::ResourceKind;
-use indicatif::{ProgressBar, ProgressStyle};
+use indicatif::ProgressBar;
 use reqwest::StatusCode;
 use rust_i18n::t;
 use tokio::io::AsyncWriteExt;
+use tokio::sync::Semaphore;
+use tokio::task::JoinSet;
 
+use crate::progress::{DownloadProgress, FileProgress};
 use crate::ui;
 
 pub async fn install(
@@ -23,39 +28,123 @@ pub async fn install(
     items: &[InstallItem],
     target: &Path,
     create: &[ResourceKind],
+    jobs: usize,
 ) -> Result<()> {
     for kind in create {
         std::fs::create_dir_all(target.join(kind.folder()))
             .with_context(|| t!("sync.create_dir_failed", path = kind.folder()).to_string())?;
     }
 
-    let total = items.len();
-    for (index, item) in items.iter().enumerate() {
-        download(client, item, target, index + 1, total)
-            .await
-            .with_context(|| {
-                t!(
-                    "sync.install_item_failed",
-                    name = item.project.slug.as_str()
-                )
-                .to_string()
-            })?;
+    let (items, duplicates) = dedupe(items);
+
+    if !duplicates.is_empty() {
+        ui::warn(&t!(
+            "sync.duplicate_files",
+            names = duplicates.join(&t!("error.separator"))
+        ));
     }
 
-    Ok(())
+    let count = items.len();
+
+    if count == 0 {
+        return Ok(());
+    }
+
+    let progress = DownloadProgress::new(count);
+    let semaphore = Arc::new(Semaphore::new(jobs.min(count).max(1)));
+    let mut tasks = JoinSet::new();
+
+    for (index, item) in items.iter().enumerate() {
+        let client = client.clone();
+        let item = item.clone();
+        let target = target.to_path_buf();
+        let progress = progress.clone();
+        let semaphore = Arc::clone(&semaphore);
+
+        tasks.spawn(async move {
+            let permit = semaphore.acquire_owned().await.expect("信号量不会关闭");
+            let file = progress.start(index + 1, count, &item.file.filename);
+            let result = download(&client, &item, &target, &file).await;
+
+            // 先让出并发额度，再处理收尾。
+            drop(permit);
+
+            match result {
+                Ok(()) => {
+                    progress.succeed(file);
+                    Ok(())
+                }
+                Err(err) => {
+                    progress.fail(file);
+                    Err(err.context(
+                        t!(
+                            "sync.install_item_failed",
+                            name = item.project.slug.as_str()
+                        )
+                        .to_string(),
+                    ))
+                }
+            }
+        });
+    }
+
+    let mut failures = Vec::new();
+
+    while let Some(joined) = tasks.join_next().await {
+        match joined {
+            Ok(Ok(())) => {}
+            Ok(Err(err)) => failures.push(err),
+            Err(err) => failures.push(err.into()),
+        }
+    }
+
+    progress.finish();
+
+    if failures.is_empty() {
+        return Ok(());
+    }
+
+    Err(failure_report(failures))
+}
+
+/// 并发写同名 `.part` 会互相踩踏，只保留第一个。
+fn dedupe(items: &[InstallItem]) -> (Vec<InstallItem>, Vec<String>) {
+    let mut seen = HashSet::new();
+    let mut kept = Vec::new();
+    let mut duplicates = Vec::new();
+
+    for item in items {
+        let key = format!("{}/{}", item.kind.folder(), item.file.filename);
+
+        if seen.insert(key) {
+            kept.push(item.clone());
+        } else {
+            duplicates.push(item.file.filename.clone());
+        }
+    }
+
+    (kept, duplicates)
+}
+
+/// 把所有失败拼成一条错误，避免只看到第一个。
+fn failure_report(failures: Vec<anyhow::Error>) -> anyhow::Error {
+    let mut text = t!("sync.install_failed_list").to_string();
+
+    for err in failures {
+        text.push_str(&format!("\n  {err:#}"));
+    }
+
+    anyhow::anyhow!(text)
 }
 
 async fn download(
     client: &Client,
     item: &InstallItem,
     target: &Path,
-    index: usize,
-    count: usize,
+    progress: &FileProgress,
 ) -> Result<()> {
     let dest = plan::install_path(target, item.kind, &item.file.filename);
     let part = dest.with_file_name(format!("{}.part", item.file.filename));
-    let label = format!("[{index}/{count}] {}", item.file.filename);
-    let mut bar: Option<ProgressBar> = None;
     let mut attempt = 1;
 
     loop {
@@ -80,9 +169,7 @@ async fn download(
                     return Err(err.into());
                 };
 
-                let message = retry_message(&label, attempt, wait);
-                notify_retry(bar.as_ref(), &message);
-
+                notify_retry(progress, &retry_message(progress, attempt, wait));
                 tokio::time::sleep(wait).await;
                 attempt += 1;
                 continue;
@@ -91,11 +178,11 @@ async fn download(
 
         let resumed = offset > 0 && response.status() == StatusCode::PARTIAL_CONTENT;
         let total = response.content_length().unwrap_or(0) + if resumed { offset } else { 0 };
-        let bar = bar.get_or_insert_with(|| progress_bar(total, &label));
-        bar.set_message(label.clone());
+        progress.set_total(total);
 
         // 续传时进度条对齐已有字节；服务器不支持 Range 返回 200 时从头写。
-        bar.set_position(if resumed { offset } else { 0 });
+        progress.set_position(if resumed { offset } else { 0 });
+        progress.set_message(progress.label().to_string());
 
         let mut file = if resumed {
             tokio::fs::OpenOptions::new()
@@ -108,7 +195,7 @@ async fn download(
         };
 
         let result = async {
-            copy(response, &mut file, bar).await?;
+            copy(response, &mut file, progress.bar()).await?;
             file.flush().await?;
             Ok::<_, CopyError>(())
         }
@@ -119,24 +206,21 @@ async fn download(
 
         match result {
             Ok(()) => {
-                bar.finish_and_clear();
                 std::fs::rename(&part, &dest)?;
                 return Ok(());
             }
             Err(err) => {
                 if attempt >= retry::MAX_ATTEMPTS {
-                    bar.finish_and_clear();
                     let _ = std::fs::remove_file(&part);
                     return Err(err.into());
                 }
 
                 let Some(wait) = err.retry_delay(attempt) else {
-                    bar.finish_and_clear();
                     let _ = std::fs::remove_file(&part);
                     return Err(err.into());
                 };
 
-                notify_retry(Some(bar), &retry_message(&label, attempt, wait));
+                notify_retry(progress, &retry_message(progress, attempt, wait));
                 tokio::time::sleep(wait).await;
                 attempt += 1;
             }
@@ -155,9 +239,10 @@ fn discard_part(err: &ApiError, part: &Path) -> bool {
     stale
 }
 
-fn retry_message(label: &str, attempt: usize, wait: Duration) -> String {
+fn retry_message(progress: &FileProgress, attempt: usize, wait: Duration) -> String {
     format!(
-        "{label} {}",
+        "{} {}",
+        progress.label(),
         t!(
             "sync.download_retrying",
             attempt = attempt,
@@ -167,13 +252,11 @@ fn retry_message(label: &str, attempt: usize, wait: Duration) -> String {
 }
 
 /// 有可见进度条就写在条上，否则退回 stderr，避免非 tty 时重连悄无声息。
-fn notify_retry(bar: Option<&ProgressBar>, message: &str) {
-    if let Some(bar) = bar {
-        bar.set_message(message.to_string());
+fn notify_retry(progress: &FileProgress, message: &str) {
+    progress.set_message(message.to_string());
 
-        if !bar.is_hidden() {
-            return;
-        }
+    if !progress.bar().is_hidden() {
+        return;
     }
 
     ui::warn(message);
@@ -227,29 +310,4 @@ async fn copy(
     }
 
     Ok(())
-}
-
-/// 知道总长度就给百分比，不知道就给转圈加已下载字节。
-fn progress_bar(total: u64, label: &str) -> ProgressBar {
-    if total == 0 {
-        let bar = ProgressBar::new_spinner()
-            .with_style(spinner_style())
-            .with_message(label.to_string());
-        bar.enable_steady_tick(Duration::from_millis(120));
-        return bar;
-    }
-
-    ProgressBar::new(total)
-        .with_style(bar_style())
-        .with_message(label.to_string())
-}
-
-fn bar_style() -> ProgressStyle {
-    ProgressStyle::with_template("{msg} [{bar:36}] {bytes}/{total_bytes} {bytes_per_sec} {eta}")
-        .expect("固定的进度条模板不会失败")
-        .progress_chars("=>-")
-}
-
-fn spinner_style() -> ProgressStyle {
-    ProgressStyle::with_template("{msg} {spinner} {bytes}").expect("固定的进度条模板不会失败")
 }

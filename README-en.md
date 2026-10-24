@@ -67,7 +67,7 @@ cargo build --release
 ## Usage
 
 ```text
-emcsync sync <source_dir> <target_dir> -v <mc_version> -l <loader> -p <platform> [-y] [-d]
+emcsync sync <source_dir> <target_dir> -v <mc_version> -l <loader> -p <platform> [-j <jobs>] [-y] [-d]
 emcsync help
 ```
 
@@ -89,6 +89,7 @@ emcsync help
 | `-v, --version <mc_version>` | Minecraft version the resources belong to, for example `26.3`; the version list is not hardcoded and is fetched from upstream |
 | `-l, --loader <loader>` | Loader: `fabric`, `forge`, `neoforge`, or `quilt` |
 | `-p, --prefer <platform>` | Preferred platform to fetch resources from: `modrinth` or `curseforge` |
+| `-j, --jobs <jobs>` | Number of files to download at once, 1-16, default 4 |
 | `-y, --yes` | Assume yes and skip the confirmation prompt |
 | `-d, --dry-run` | Show changes without installing |
 

@@ -50,6 +50,12 @@ pub fn localize(err: &Error) -> Option<String> {
             }
             Some(finish(lines))
         }
+        ErrorKind::ValueValidation => {
+            let invalid = value(err, ContextKind::InvalidValue, 0).unwrap_or_default();
+            Some(finish(vec![
+                t!("error.invalid_jobs", value = ui::accent(&invalid)).to_string(),
+            ]))
+        }
         _ => None,
     }
 }

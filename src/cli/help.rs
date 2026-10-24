@@ -68,6 +68,11 @@ pub fn render() -> String {
         &t!("help.opt_prefer"),
         OPTION_WIDTH,
     ));
+    text.push_str(&item(
+        "-j, --jobs <jobs>",
+        &t!("help.opt_jobs"),
+        OPTION_WIDTH,
+    ));
     text.push_str(&item("-y, --yes", &t!("help.opt_yes"), OPTION_WIDTH));
     text.push_str(&item(
         "-d, --dry-run",

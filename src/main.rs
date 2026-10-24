@@ -2,6 +2,7 @@
 
 mod cli;
 mod install;
+mod progress;
 mod report;
 mod ui;
 
@@ -135,6 +136,7 @@ async fn sync(args: cli::SyncArgs) -> Result<()> {
         &install_plan.installable,
         &args.target_dir,
         &create,
+        usize::from(args.jobs),
     )
     .await
     {

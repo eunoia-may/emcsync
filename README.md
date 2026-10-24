@@ -67,7 +67,7 @@ cargo build --release
 ## 用法
 
 ```text
-emcsync sync <source_dir> <target_dir> -v <mc_version> -l <loader> -p <platform> [-y] [-d]
+emcsync sync <source_dir> <target_dir> -v <mc_version> -l <loader> -p <platform> [-j <jobs>] [-y] [-d]
 emcsync help
 ```
 
@@ -89,6 +89,7 @@ emcsync help
 | `-v, --version <mc_version>` | 要复现的资源所属的 Minecraft 版本，例如 `26.3`；版本列表不硬编码，从上游获取 |
 | `-l, --loader <loader>` | 加载器，可选 `fabric`、`forge`、`neoforge`、`quilt` |
 | `-p, --prefer <platform>` | 优先从哪个平台获取资源，可选 `modrinth`、`curseforge` |
+| `-j, --jobs <jobs>` | 同时下载的文件数，范围 1-16，默认 4 |
 | `-y, --yes` | 预同意，跳过询问环节 |
 | `-d, --dry-run` | 只展示变化，不实际安装 |
 

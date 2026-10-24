@@ -53,6 +53,16 @@ pub struct SyncArgs {
     #[arg(short = 'p', long, ignore_case = true, value_name = "platform")]
     pub prefer: Platform,
 
+    /// 同时下载的文件数
+    #[arg(
+        short = 'j',
+        long,
+        value_name = "jobs",
+        default_value_t = 4,
+        value_parser = clap::value_parser!(u8).range(1..=16)
+    )]
+    pub jobs: u8,
+
     /// 预同意，跳过询问环节
     #[arg(short = 'y', long)]
     pub yes: bool,
