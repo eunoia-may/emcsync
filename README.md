@@ -67,7 +67,7 @@ cargo build --release
 ## 用法
 
 ```text
-emcsync sync <source_dir> <target_dir> -v <mc_version> -l <loader> -p <platform> [-j <jobs>] [-y] [-d]
+emcsync sync <source_dir> <target_dir> -v <mc_version> -l <loader> [-j <jobs>] [-y] [-d]
 emcsync help
 ```
 
@@ -86,20 +86,16 @@ emcsync help
 | --- | --- |
 | `<source_dir>` | 提取源，即原实例的目录；路径含空格时用引号（`""` 或 `''`）包裹 |
 | `<target_dir>` | 复现目标，即待复现实例的目录；路径含空格时用引号（`""` 或 `''`）包裹 |
-| `-v, --version <mc_version>` | 要复现的资源所属的 Minecraft 版本，例如 `26.3`；版本列表不硬编码，从上游获取 |
+| `-v, --version <mc_version>` | 要复现的资源所属的 Minecraft 版本，例如 `26.3` |
 | `-l, --loader <loader>` | 加载器，可选 `fabric`、`forge`、`neoforge`、`quilt` |
-| `-p, --prefer <platform>` | 优先从哪个平台获取资源，可选 `modrinth`、`curseforge` |
 | `-j, --jobs <jobs>` | 同时下载的文件数，范围 1-16，默认 4 |
 | `-y, --yes` | 预同意，跳过询问环节 |
 | `-d, --dry-run` | 只展示变化，不实际安装 |
 
 另有大写 `-V, --version`，用于显示程序自身的版本。
 
-## 后续计划
-打算补全这些功能，排序不代表优先级：
+## 额外说明
 
-- 补全 CurseForge 资源的支持
+- **curseforge 资源的支持**：此项目为**自用优先**，目前 modrinth 资源已经能满足我的需求，而 curseforge 资源的下载比较麻烦，因此暂时不做。
 
-- 允许勾选哪些资源不同步
-
-- UI 前端（计划新开项目）
+- **不接受外部 PR 的说明**：本项目使用 AI 辅助开发，作者代码水平较差，无审查 PR 的能力，因此关闭接受渠道；若有 BUG，欢迎通过 Issue 反馈。

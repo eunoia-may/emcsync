@@ -43,23 +43,22 @@ pub fn print_plan(result: &MatchResult, plan: &Plan) {
     ui::print_stdout(&blocks.join("\n"));
 }
 
-/// 待安装的资源带平台，方便看出是从哪拿的。
+/// 待安装的资源。
 fn installable_block(heading: &str, items: &[InstallItem]) -> String {
     let mut text = format!("{}\n", ui::heading(heading));
 
     for item in items {
         text.push_str(&format!(
-            "  {} ({}) ({})\n",
+            "  {} ({})\n",
             ui::accent(&item.project.slug),
-            item.kind.label(),
-            item.platform.label()
+            item.kind.label()
         ));
     }
 
     text
 }
 
-/// 此版本不存在、已存在的资源不显示平台，省一次反查。
+/// 此版本不存在、已存在的资源。
 fn plain_block(heading: &str, items: &[Resolved]) -> String {
     let mut text = format!("{}\n", ui::heading(heading));
 

@@ -6,6 +6,5 @@ pub mod hash;
 pub mod matching;
 pub mod modrinth;
 pub mod plan;
-pub mod platform;
 pub mod retry;
 pub mod scan;

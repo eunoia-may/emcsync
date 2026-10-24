@@ -49,10 +49,6 @@ pub struct SyncArgs {
     #[arg(short = 'l', long, ignore_case = true, value_name = "loader")]
     pub loader: Loader,
 
-    /// 优先从哪个平台获取资源
-    #[arg(short = 'p', long, ignore_case = true, value_name = "platform")]
-    pub prefer: Platform,
-
     /// 同时下载的文件数
     #[arg(
         short = 'j',
@@ -82,7 +78,7 @@ pub enum Loader {
 }
 
 impl Loader {
-    /// Modrinth 与 CurseForge 都用这套小写名字。
+    /// Modrinth 用这套小写名字。
     pub fn label(self) -> &'static str {
         match self {
             Self::Fabric => "fabric",
@@ -91,13 +87,6 @@ impl Loader {
             Self::Quilt => "quilt",
         }
     }
-}
-
-#[derive(Clone, Copy, Debug, ValueEnum)]
-#[value(rename_all = "lowercase")]
-pub enum Platform {
-    Modrinth,
-    CurseForge,
 }
 
 pub fn parse() -> Result<Command, clap::Error> {

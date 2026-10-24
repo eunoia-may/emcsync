@@ -8,7 +8,6 @@ use tokio::task::JoinSet;
 
 use crate::matching::Resolved;
 use crate::modrinth::{ApiError, Client, Project, VersionFile};
-use crate::platform::Platform;
 use crate::scan::{FOLDERS, ResourceKind};
 
 // 并发查询；Modrinth 按分钟限流，八个足够快也不会打满。
@@ -18,7 +17,6 @@ const LOOKUP_CONCURRENCY: usize = 8;
 pub struct InstallItem {
     pub project: Project,
     pub kind: ResourceKind,
-    pub platform: Platform,
     pub file: VersionFile,
 }
 
@@ -70,7 +68,6 @@ pub async fn build(
                 Some(file) => plan.installable.push(InstallItem {
                     project: resolved.project.clone(),
                     kind: resolved.file.kind,
-                    platform: resolved.platform,
                     file,
                 }),
                 None => plan.unavailable.push(resolved),
@@ -96,7 +93,7 @@ pub fn missing_folders(target: &Path, items: &[InstallItem]) -> Vec<ResourceKind
         .collect()
 }
 
-/// 安装后的完整路径：按类型落到对应子目录，文件名沿用平台给的。
+/// 安装后的完整路径：按类型落到对应子目录，文件名沿用上游给的。
 pub fn install_path(target: &Path, kind: ResourceKind, file_name: &str) -> PathBuf {
     target.join(kind.folder()).join(file_name)
 }
@@ -108,7 +105,6 @@ mod tests {
 
     use super::{InstallItem, install_path, missing_folders};
     use crate::modrinth::{Project, VersionFile};
-    use crate::platform::Platform;
     use crate::scan::ResourceKind;
 
     fn temp_dir(name: &str) -> PathBuf {
@@ -127,7 +123,6 @@ mod tests {
                 title: slug.to_string(),
             },
             kind,
-            platform: Platform::Modrinth,
             file: VersionFile {
                 hashes: Default::default(),
                 url: format!("https://cdn.modrinth.com/{slug}.jar"),

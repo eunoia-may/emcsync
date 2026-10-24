@@ -66,10 +66,6 @@ async fn sync(args: cli::SyncArgs) -> Result<()> {
         );
     }
 
-    if matches!(args.prefer, cli::Platform::CurseForge) {
-        ui::warn(&t!("sync.curseforge_deferred"));
-    }
-
     ui::status(&t!("sync.matching"));
     let source = scan::scan_instance(&args.source_dir)?;
     let target = scan::scan_instance(&args.target_dir)?;

@@ -64,11 +64,6 @@ pub fn render() -> String {
         OPTION_WIDTH,
     ));
     text.push_str(&item(
-        "-p, --prefer <platform>",
-        &t!("help.opt_prefer"),
-        OPTION_WIDTH,
-    ));
-    text.push_str(&item(
         "-j, --jobs <jobs>",
         &t!("help.opt_jobs"),
         OPTION_WIDTH,

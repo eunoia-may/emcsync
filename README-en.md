@@ -1,5 +1,7 @@
 English | [简体中文](README.md)
 
+> **Note:** This document is a non-Chinese version of the README and is translated by AI; some parts may be inaccurate. If you find any problems, please [open an issue](https://github.com/eunoia-may/emcsync/issues) to let us know.
+
 # emcsync
 
 ## What is this?
@@ -67,7 +69,7 @@ cargo build --release
 ## Usage
 
 ```text
-emcsync sync <source_dir> <target_dir> -v <mc_version> -l <loader> -p <platform> [-j <jobs>] [-y] [-d]
+emcsync sync <source_dir> <target_dir> -v <mc_version> -l <loader> [-j <jobs>] [-y] [-d]
 emcsync help
 ```
 
@@ -86,21 +88,16 @@ emcsync help
 | --- | --- |
 | `<source_dir>` | Source instance directory; quote it with `""` or `''` if the path contains spaces |
 | `<target_dir>` | Target instance directory; quote it with `""` or `''` if the path contains spaces |
-| `-v, --version <mc_version>` | Minecraft version the resources belong to, for example `26.3`; the version list is not hardcoded and is fetched from upstream |
+| `-v, --version <mc_version>` | Minecraft version the resources to reproduce belong to, for example `26.3` |
 | `-l, --loader <loader>` | Loader: `fabric`, `forge`, `neoforge`, or `quilt` |
-| `-p, --prefer <platform>` | Preferred platform to fetch resources from: `modrinth` or `curseforge` |
 | `-j, --jobs <jobs>` | Number of files to download at once, 1-16, default 4 |
 | `-y, --yes` | Assume yes and skip the confirmation prompt |
 | `-d, --dry-run` | Show changes without installing |
 
 An uppercase `-V, --version` is also available to show the program's own version.
 
-## Roadmap
+## Notes
 
-The following features are planned; the order does not reflect priority:
+- **CurseForge support**: This project is **self-use first**. Modrinth resources already cover my needs, and downloading from CurseForge is rather troublesome, so it is not supported for now.
 
-- Complete CurseForge resource support
-
-- Allow choosing which resources not to sync
-
-- A UI frontend (planned as a separate project)
+- **No external pull requests**: This project is developed with AI assistance, and the author's coding skills are modest, which leaves me unable to review pull requests; therefore the PR channel is closed. If you find a bug, feel free to report it via [Issues](https://github.com/eunoia-may/emcsync/issues).

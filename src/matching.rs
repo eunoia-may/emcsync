@@ -5,14 +5,12 @@
 use std::collections::{BTreeSet, HashMap};
 
 use crate::modrinth::{ApiError, Client, Project, Version};
-use crate::platform::Platform;
 use crate::scan::ResourceFile;
 
 #[derive(Clone, Debug)]
 pub struct Resolved {
     pub file: ResourceFile,
     pub project: Project,
-    pub platform: Platform,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -21,7 +19,7 @@ pub struct MatchResult {
     pub missing: Vec<Resolved>,
     /// 源与目标都有的项目。
     pub existing: Vec<Resolved>,
-    /// 两个平台都查不到的文件名。
+    /// Modrinth 查不到的文件名。
     pub unmatched: Vec<String>,
 }
 
@@ -91,7 +89,6 @@ fn resolve(
             Some(project) => resolved.push(Resolved {
                 file: file.clone(),
                 project: project.clone(),
-                platform: Platform::Modrinth,
             }),
             None => unmatched.push(file.file_name.clone()),
         }
@@ -133,7 +130,6 @@ mod tests {
 
     use super::{Resolved, resolve, split};
     use crate::modrinth::{Project, Version};
-    use crate::platform::Platform;
     use crate::scan::{ResourceFile, ResourceKind};
 
     fn file(name: &str, sha1: &str) -> ResourceFile {
@@ -189,17 +185,14 @@ mod tests {
             Resolved {
                 file: file("sodium.jar", "a"),
                 project: project("P1", "sodium"),
-                platform: Platform::Modrinth,
             },
             Resolved {
                 file: file("sodium-extra.jar", "b"),
                 project: project("P2", "sodium-extra"),
-                platform: Platform::Modrinth,
             },
             Resolved {
                 file: file("lib.jar", "c"),
                 project: project("P3", "fabric-api"),
-                platform: Platform::Modrinth,
             },
         ];
         let target_ids = BTreeSet::from(["P1".to_string(), "P3".to_string()]);
@@ -225,12 +218,10 @@ mod tests {
             Resolved {
                 file: file("z-sodium.jar", "a"),
                 project: project("P1", "sodium"),
-                platform: Platform::Modrinth,
             },
             Resolved {
                 file: file("a-sodium.jar", "a"),
                 project: project("P1", "sodium"),
-                platform: Platform::Modrinth,
             },
         ];
 
