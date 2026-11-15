@@ -12,7 +12,8 @@
 
   outputs = { self, nixpkgs, rust-overlay }:
     let
-      systems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+      # 不含 x86_64-darwin：锁定的 nixpkgs-unstable 已移除该平台支持。
+      systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
 
       forEachSystem = f:
         nixpkgs.lib.genAttrs systems (system:
@@ -22,17 +23,9 @@
           }));
     in
     {
-      packages = forEachSystem (pkgs:
-        let
-          rust = pkgs.rust-bin.stable.latest.default;
-          rustPlatform = pkgs.makeRustPlatform {
-            cargo = rust;
-            rustc = rust;
-          };
-        in
-        {
-          default = pkgs.callPackage ./package.nix { inherit rustPlatform; };
-        });
+      packages = forEachSystem (pkgs: {
+        default = pkgs.callPackage ./package.nix { };
+      });
 
       # 只把包挂进 pkgs，不往 systemPackages 或 home.packages 里塞东西，装不装由用户决定。
       # 必须转发到 self.packages.${system}.default：后者用 flake.lock 钉住的 nixpkgs，
